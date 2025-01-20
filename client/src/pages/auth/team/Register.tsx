@@ -68,7 +68,10 @@ export default function TeamRegister() {
         .select()
         .single();
 
-      if (orgError) throw orgError;
+      if (orgError) {
+        console.error('Organization creation error:', orgError);
+        throw new Error(`Failed to create organization: ${orgError.message}`);
+      }
 
       // Sign up the user with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -82,21 +85,31 @@ export default function TeamRegister() {
         },
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw new Error(`Authentication failed: ${authError.message}`);
+      }
+
+      if (!authData.user) {
+        throw new Error('No user data returned from authentication');
+      }
 
       // Create the user profile
       const { error: profileError } = await supabase
         .from('profiles')
         .insert([
           {
-            id: authData.user!.id,
+            id: authData.user.id,
             email: values.email,
             role: 'admin',
             organization_id: organization.id,
           }
         ]);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        throw new Error(`Failed to create profile: ${profileError.message}`);
+      }
 
       toast({
         title: 'Registration successful!',
@@ -108,8 +121,8 @@ export default function TeamRegister() {
       console.error('Registration error:', error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to register',
+        title: 'Registration Failed',
+        description: error instanceof Error ? error.message : 'Failed to register. Please try again.',
       });
     } finally {
       setIsLoading(false);
