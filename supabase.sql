@@ -1,9 +1,5 @@
--- Enable RLS
-alter table public.profiles enable row level security;
-alter table public.organizations enable row level security;
-alter table public.tickets enable row level security;
-
--- Create organizations table
+-- Part 1: Table Creation
+-- Create organizations table first
 create table public.organizations (
   id uuid default gen_random_uuid() primary key,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -38,6 +34,12 @@ create table public.tickets (
   tags text[] default array[]::text[],
   metadata jsonb default '{}'::jsonb
 );
+
+-- Part 2: Enable RLS and Create Policies
+-- Enable RLS after tables are created
+alter table public.profiles enable row level security;
+alter table public.organizations enable row level security;
+alter table public.tickets enable row level security;
 
 -- Create RLS policies
 -- Organizations policies
@@ -89,7 +91,8 @@ create policy "Tickets can be updated by organization members"
     )
   );
 
--- Functions
+-- Part 3: Functions, Triggers and Realtime
+-- Functions and triggers (after tables and policies are set up)
 create or replace function public.handle_new_user() 
 returns trigger as $$
 begin
@@ -104,7 +107,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- Enable realtime
+-- Enable realtime last
 alter publication supabase_realtime add table organizations;
 alter publication supabase_realtime add table profiles;
 alter publication supabase_realtime add table tickets;
