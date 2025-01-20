@@ -1,12 +1,29 @@
 import { create } from 'zustand';
-import { supabase } from '@/lib/supabase';
-import type { User } from '@/types';
+import { supabase, getUserProfile, verifyOrganizationAccess } from '@/lib/supabase';
+
+interface AuthCredentials {
+  type: 'team' | 'customer';
+  email: string;
+  password: string;
+  organizationSlug?: string;
+}
+
+interface User {
+  id: string;
+  email: string;
+  role: 'admin' | 'agent' | 'customer';
+  organization?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+}
 
 interface UserState {
   currentUser: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (credentials: AuthCredentials) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -20,19 +37,15 @@ export const useUserStore = create<UserState>((set) => ({
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) throw error;
-      
-      if (session) {
-        const { data: userProfile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
 
+      if (session?.user) {
+        const profile = await getUserProfile(session.user.id);
         set({
           currentUser: {
             id: session.user.id,
             email: session.user.email!,
-            role: userProfile?.role || 'customer'
+            role: profile.role,
+            organization: profile.organizations,
           },
           isAuthenticated: true
         });
@@ -44,26 +57,38 @@ export const useUserStore = create<UserState>((set) => ({
     }
   },
 
-  login: async (email: string, password: string) => {
+  login: async ({ type, email, password, organizationSlug }: AuthCredentials) => {
+    if (type === 'team' && !organizationSlug) {
+      throw new Error('Organization ID is required for team login');
+    }
+
+    // For team members, verify organization access first
+    if (type === 'team') {
+      await verifyOrganizationAccess(organizationSlug!);
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      password
+      password,
     });
 
     if (error) throw error;
 
     if (data.user) {
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
+      const profile = await getUserProfile(data.user.id);
+
+      // Verify user has access to the specified organization
+      if (type === 'team' && profile.organizations?.slug !== organizationSlug) {
+        await supabase.auth.signOut();
+        throw new Error('You do not have access to this organization');
+      }
 
       set({
         currentUser: {
           id: data.user.id,
           email: data.user.email!,
-          role: userProfile?.role || 'customer'
+          role: profile.role,
+          organization: profile.organizations,
         },
         isAuthenticated: true
       });

@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { useUserStore } from '@/stores/userStore';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -25,59 +25,70 @@ import {
 import { Input } from '@/components/ui/input';
 import { Link } from 'wouter';
 
-const teamLoginSchema = z.object({
-  organizationSlug: z.string().min(1, 'Organization ID is required'),
+const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
-export default function TeamLogin() {
+export default function CustomerRegister() {
   const [, setLocation] = useLocation();
-  const { login } = useUserStore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof teamLoginSchema>>({
-    resolver: zodResolver(teamLoginSchema),
+  const form = useForm<z.infer<typeof registerSchema>>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
-      organizationSlug: '',
       email: '',
       password: '',
+      confirmPassword: '',
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof teamLoginSchema>) => {
+  const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     try {
       setIsLoading(true);
-      await login({
-        type: 'team',
+
+      // Sign up the user with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
-        organizationSlug: values.organizationSlug
+        options: {
+          data: {
+            role: 'customer', // Default role for customer registrations
+          },
+        },
       });
+
+      if (authError) throw authError;
+
+      // Create the user profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: authData.user!.id,
+            email: values.email,
+            role: 'customer',
+          }
+        ]);
+
+      if (profileError) throw profileError;
 
       toast({
-        title: 'Welcome back!',
-        description: 'You have successfully logged in.',
+        title: 'Registration successful!',
+        description: 'Please check your email to verify your account.',
       });
-
-      // Redirect based on role - the role will come from the user store after login
-      const role = 'admin'; // This will come from the login response
-      switch (role) {
-        case 'admin':
-          setLocation('/admin/dashboard');
-          break;
-        case 'agent':
-          setLocation('/agent/dashboard');
-          break;
-        default:
-          setLocation('/unauthorized');
-      }
+      
+      setLocation('/auth/customer/login');
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to login',
+        description: error instanceof Error ? error.message : 'Failed to register',
       });
     } finally {
       setIsLoading(false);
@@ -88,30 +99,14 @@ export default function TeamLogin() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Team Login</CardTitle>
+          <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
           <CardDescription>
-            Enter your organization ID and credentials to login
+            Enter your email below to create your customer account
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="organizationSlug"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Organization ID</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="your-org-name"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <FormField
                 control={form.control}
                 name="email"
@@ -137,7 +132,24 @@ export default function TeamLogin() {
                     <FormLabel>Password</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter your password"
+                        placeholder="Create a password"
+                        type="password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Confirm your password"
                         type="password"
                         {...field}
                       />
@@ -151,23 +163,16 @@ export default function TeamLogin() {
                 className="w-full"
                 disabled={isLoading}
               >
-                {isLoading ? 'Logging in...' : 'Login'}
+                {isLoading ? 'Creating account...' : 'Create account'}
               </Button>
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-          <div className="text-sm text-center">
-            <Link href="/auth/team/reset-password" className="text-primary hover:underline">
-              Forgot your password?
-            </Link>
-          </div>
-          <div className="text-sm text-center">
-            Need to create an organization?{' '}
-            <Link href="/auth/team/register" className="text-primary hover:underline">
-              Register here
-            </Link>
-          </div>
+        <CardFooter className="text-sm text-center">
+          Already have an account?{' '}
+          <Link href="/auth/customer/login" className="text-primary hover:underline">
+            Login
+          </Link>
         </CardFooter>
       </Card>
     </div>
