@@ -74,7 +74,22 @@ function App() {
         {/* Public Routes */}
         <Route path="/" component={() => (
           <PublicLayout>
-            <div>Landing Page</div>
+            <div className="min-h-screen flex flex-col items-center justify-center p-4">
+              <div className="max-w-3xl w-full space-y-6 text-center">
+                <h1 className="text-4xl font-bold tracking-tight">Welcome to AutoCRM</h1>
+                <p className="text-xl text-gray-600">
+                  Your modern customer support solution
+                </p>
+                <div className="flex gap-4 justify-center">
+                  <Link href="/login">
+                    <Button size="lg">Login</Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button size="lg" variant="outline">Register</Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
           </PublicLayout>
         )} />
         <Route path="/login" component={() => (
