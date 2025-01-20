@@ -7,7 +7,10 @@ import {
   Settings,
   HelpCircle,
   Plus,
-  List
+  List,
+  InboxIcon,
+  FileText,
+  BarChart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,45 +25,94 @@ type NavigationItem = {
 };
 
 const navigation: NavigationItem[] = [
+  // Customer Portal Navigation
   { 
-    name: 'Dashboard', 
-    href: '/dashboard', 
+    name: 'My Dashboard', 
+    href: '/portal/dashboard', 
+    icon: LayoutDashboard,
+    roles: ['customer']
+  },
+  { 
+    name: 'Submit Ticket', 
+    href: '/portal/tickets/new', 
+    icon: Plus,
+    roles: ['customer']
+  },
+  { 
+    name: 'My Tickets', 
+    href: '/portal/tickets', 
+    icon: Ticket,
+    roles: ['customer']
+  },
+  { 
+    name: 'Knowledge Base', 
+    href: '/portal/kb', 
+    icon: FileText,
+    roles: ['customer']
+  },
+
+  // Agent Navigation
+  { 
+    name: 'Agent Dashboard', 
+    href: '/agent/dashboard', 
+    icon: LayoutDashboard,
+    roles: ['agent']
+  },
+  { 
+    name: 'Ticket Queue', 
+    href: '/agent/tickets/queue', 
+    icon: InboxIcon,
+    roles: ['agent']
+  },
+  { 
+    name: 'My Assigned', 
+    href: '/agent/tickets/my-tickets', 
+    icon: List,
+    roles: ['agent']
+  },
+  { 
+    name: 'Knowledge Base', 
+    href: '/agent/kb/articles', 
+    icon: FileText,
+    roles: ['agent']
+  },
+
+  // Admin Navigation
+  { 
+    name: 'Admin Dashboard', 
+    href: '/admin/dashboard', 
     icon: LayoutDashboard,
     roles: ['admin']
   },
   { 
     name: 'All Tickets', 
-    href: '/tickets', 
+    href: '/admin/tickets/all', 
     icon: List,
-    roles: ['agent', 'admin']
+    roles: ['admin']
   },
   { 
-    name: 'My Tickets', 
-    href: '/customer-portal', 
-    icon: Ticket,
-    roles: ['customer']
+    name: 'Analytics', 
+    href: '/admin/tickets/analytics', 
+    icon: BarChart,
+    roles: ['admin']
   },
   { 
-    name: 'New Ticket', 
-    href: '/customer-portal?tab=new-ticket', 
-    icon: Plus,
-    roles: ['customer']
-  },
-  { 
-    name: 'Customers', 
-    href: '/customers', 
+    name: 'User Management', 
+    href: '/admin/users', 
     icon: Users,
     roles: ['admin']
   },
   { 
     name: 'Settings', 
-    href: '/settings', 
+    href: '/admin/settings', 
     icon: Settings,
     roles: ['admin']
   },
+
+  // Common Navigation
   { 
     name: 'Help', 
-    href: '/help', 
+    href: '/kb', 
     icon: HelpCircle,
     roles: ['customer', 'agent', 'admin']
   },

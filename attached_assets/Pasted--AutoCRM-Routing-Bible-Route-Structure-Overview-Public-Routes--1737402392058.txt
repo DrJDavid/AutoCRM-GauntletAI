@@ -1,0 +1,240 @@
+# AutoCRM Routing Bible
+
+## Route Structure Overview
+
+### Public Routes
+```
+/                           # Landing page
+/login                      # Login page
+/register                   # Registration page
+/reset-password            # Password reset
+/kb                        # Public knowledge base
+```
+
+### Customer Portal Routes
+```
+/portal
+├── /dashboard             # Customer's main dashboard
+├── /tickets
+│   ├── /                 # List of customer's tickets
+│   ├── /new             # Create new ticket
+│   └── /:ticketId       # View specific ticket
+├── /profile              # Customer profile settings
+└── /kb                   # Knowledge base (customer view)
+```
+
+### Agent Routes
+```
+/agent
+├── /dashboard            # Agent's main dashboard
+├── /tickets
+│   ├── /queue           # Ticket queue (unassigned)
+│   ├── /my-tickets      # Tickets assigned to agent
+│   └── /:ticketId       # Ticket detail view
+├── /customers
+│   ├── /                # Customer list
+│   └── /:customerId     # Customer detail view
+├── /kb
+│   ├── /articles        # Knowledge base articles
+│   └── /categories      # KB categories
+└── /profile             # Agent profile settings
+```
+
+### Admin Routes
+```
+/admin
+├── /dashboard           # Admin overview dashboard
+├── /tickets
+│   ├── /all            # All tickets view
+│   ├── /unassigned     # Unassigned tickets
+│   ├── /closed         # Closed tickets
+│   └── /analytics      # Ticket analytics
+├── /teams
+│   ├── /               # Team list
+│   ├── /new           # Create team
+│   └── /:teamId       # Team management
+├── /users
+│   ├── /agents        # Agent management
+│   ├── /customers     # Customer management
+│   └── /:userId       # User detail/edit
+├── /settings
+│   ├── /general       # General settings
+│   ├── /automation    # Automation rules
+│   ├── /integrations  # Third-party integrations
+│   └── /security      # Security settings
+└── /reports           # Advanced reporting
+```
+
+## Route Implementation
+
+```typescript
+// src/routes/index.tsx
+import { createBrowserRouter } from 'react-router-dom';
+
+export const router = createBrowserRouter([
+  // Public Routes
+  {
+    path: '/',
+    element: <PublicLayout />,
+    children: [
+      { path: '/', element: <LandingPage /> },
+      { path: '/login', element: <LoginPage /> },
+      { path: '/register', element: <RegisterPage /> },
+      { path: '/reset-password', element: <ResetPasswordPage /> },
+      { path: '/kb', element: <PublicKnowledgeBase /> }
+    ]
+  },
+
+  // Customer Portal Routes
+  {
+    path: '/portal',
+    element: <ProtectedRoute role="customer"><CustomerLayout /></ProtectedRoute>,
+    children: [
+      { path: 'dashboard', element: <CustomerDashboard /> },
+      { 
+        path: 'tickets',
+        children: [
+          { path: '', element: <CustomerTicketList /> },
+          { path: 'new', element: <NewTicketForm /> },
+          { path: ':ticketId', element: <CustomerTicketView /> }
+        ]
+      },
+      { path: 'profile', element: <CustomerProfile /> },
+      { path: 'kb', element: <CustomerKnowledgeBase /> }
+    ]
+  },
+
+  // Agent Routes
+  {
+    path: '/agent',
+    element: <ProtectedRoute role="agent"><AgentLayout /></ProtectedRoute>,
+    children: [
+      { path: 'dashboard', element: <AgentDashboard /> },
+      {
+        path: 'tickets',
+        children: [
+          { path: 'queue', element: <TicketQueue /> },
+          { path: 'my-tickets', element: <AgentTickets /> },
+          { path: ':ticketId', element: <TicketDetail /> }
+        ]
+      },
+      {
+        path: 'customers',
+        children: [
+          { path: '', element: <CustomerList /> },
+          { path: ':customerId', element: <CustomerDetail /> }
+        ]
+      },
+      {
+        path: 'kb',
+        children: [
+          { path: 'articles', element: <KnowledgeBaseArticles /> },
+          { path: 'categories', element: <KnowledgeBaseCategories /> }
+        ]
+      },
+      { path: 'profile', element: <AgentProfile /> }
+    ]
+  },
+
+  // Admin Routes
+  {
+    path: '/admin',
+    element: <ProtectedRoute role="admin"><AdminLayout /></ProtectedRoute>,
+    children: [
+      { path: 'dashboard', element: <AdminDashboard /> },
+      {
+        path: 'tickets',
+        children: [
+          { path: 'all', element: <AllTickets /> },
+          { path: 'unassigned', element: <UnassignedTickets /> },
+          { path: 'closed', element: <ClosedTickets /> },
+          { path: 'analytics', element: <TicketAnalytics /> }
+        ]
+      },
+      {
+        path: 'teams',
+        children: [
+          { path: '', element: <TeamList /> },
+          { path: 'new', element: <CreateTeam /> },
+          { path: ':teamId', element: <TeamManagement /> }
+        ]
+      },
+      {
+        path: 'users',
+        children: [
+          { path: 'agents', element: <AgentManagement /> },
+          { path: 'customers', element: <CustomerManagement /> },
+          { path: ':userId', element: <UserDetail /> }
+        ]
+      },
+      {
+        path: 'settings',
+        children: [
+          { path: 'general', element: <GeneralSettings /> },
+          { path: 'automation', element: <AutomationSettings /> },
+          { path: 'integrations', element: <IntegrationSettings /> },
+          { path: 'security', element: <SecuritySettings /> }
+        ]
+      },
+      { path: 'reports', element: <Reports /> }
+    ]
+  }
+]);
+
+// Route Protection Component
+interface ProtectedRouteProps {
+  role: 'customer' | 'agent' | 'admin';
+  children: React.ReactNode;
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ role, children }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+  
+  if (!user || !hasRole(user, role)) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+};
+```
+
+## Role-Based Access Control
+
+```typescript
+// src/lib/rbac.ts
+export const ROLE_PERMISSIONS = {
+  customer: [
+    'view_own_tickets',
+    'create_ticket',
+    'update_own_ticket',
+    'view_kb'
+  ],
+  agent: [
+    'view_assigned_tickets',
+    'update_ticket',
+    'view_customers',
+    'manage_kb',
+    'view_queue'
+  ],
+  admin: [
+    'manage_tickets',
+    'manage_users',
+    'manage_teams',
+    'view_analytics',
+    'manage_settings',
+    'manage_automation'
+  ]
+} as const;
+
+export const hasPermission = (user: User, permission: string): boolean => {
+  const userRole = user.role as keyof typeof ROLE_PERMISSIONS;
+  const rolePermissions = ROLE_PERMISSIONS[userRole] || [];
+  
+  if (userRole === 'admin') return true;
+  return rolePermissions.includes(permission);
+};
+```

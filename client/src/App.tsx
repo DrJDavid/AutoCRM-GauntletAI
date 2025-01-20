@@ -28,8 +28,7 @@ function ProtectedRoute({
   }
 
   if (!isAuthenticated) {
-    window.location.href = '/login';
-    return null;
+    return <Redirect to="/login" />;
   }
 
   if (!currentUser || !allowedRoles.includes(currentUser.role)) {
@@ -37,6 +36,29 @@ function ProtectedRoute({
   }
 
   return <>{children}</>;
+}
+
+function AgentLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <div className="flex-1 flex">
+        <aside className="hidden md:block w-64">
+          <Sidebar />
+        </aside>
+        <main className="flex-1 p-6">{children}</main>
+      </div>
+      <Footer />
+    </div>
+  );
+}
+
+function PublicLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {children}
+    </div>
+  );
 }
 
 function App() {
@@ -48,70 +70,124 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <div className="flex-1 flex">
-          <aside className="hidden md:block w-64">
-            <Sidebar />
-          </aside>
-          <main className="flex-1 p-6">
-            <Switch>
-              {/* Customer Routes */}
-              <Route
-                path="/customer-portal"
-                component={() => (
-                  <ProtectedRoute allowedRoles={['customer']}>
-                    <CustomerPortal />
-                  </ProtectedRoute>
-                )}
-              />
+      <Switch>
+        {/* Public Routes */}
+        <Route path="/" component={() => (
+          <PublicLayout>
+            <div>Landing Page</div>
+          </PublicLayout>
+        )} />
+        <Route path="/login" component={() => (
+          <PublicLayout>
+            <div>Login Page</div>
+          </PublicLayout>
+        )} />
+        <Route path="/register" component={() => (
+          <PublicLayout>
+            <div>Register Page</div>
+          </PublicLayout>
+        )} />
+        <Route path="/reset-password" component={() => (
+          <PublicLayout>
+            <div>Reset Password Page</div>
+          </PublicLayout>
+        )} />
+        <Route path="/kb" component={() => (
+          <PublicLayout>
+            <div>Public Knowledge Base</div>
+          </PublicLayout>
+        )} />
 
-              {/* Agent Routes */}
-              <Route
-                path="/tickets"
-                component={() => (
-                  <ProtectedRoute allowedRoles={['agent', 'admin']}>
-                    <TicketListPage />
-                  </ProtectedRoute>
-                )}
-              />
-              <Route
-                path="/tickets/:id"
-                component={() => (
-                  <ProtectedRoute allowedRoles={['agent', 'admin']}>
-                    <TicketDetailPage />
-                  </ProtectedRoute>
-                )}
-              />
+        {/* Customer Portal Routes */}
+        <Route path="/portal">
+          <Route path="/dashboard" component={() => (
+            <ProtectedRoute allowedRoles={['customer']}>
+              <AgentLayout>
+                <CustomerPortal />
+              </AgentLayout>
+            </ProtectedRoute>
+          )} />
+          <Route path="/tickets/new" component={() => (
+            <ProtectedRoute allowedRoles={['customer']}>
+              <AgentLayout>
+                <div>New Ticket Form</div>
+              </AgentLayout>
+            </ProtectedRoute>
+          )} />
+          <Route path="/tickets/:id" component={() => (
+            <ProtectedRoute allowedRoles={['customer']}>
+              <AgentLayout>
+                <TicketDetailPage />
+              </AgentLayout>
+            </ProtectedRoute>
+          )} />
+        </Route>
 
-              {/* Admin Routes */}
-              <Route
-                path="/dashboard"
-                component={() => (
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <Dashboard />
-                  </ProtectedRoute>
-                )}
-              />
+        {/* Agent Routes */}
+        <Route path="/agent">
+          <Route path="/dashboard" component={() => (
+            <ProtectedRoute allowedRoles={['agent']}>
+              <AgentLayout>
+                <Dashboard />
+              </AgentLayout>
+            </ProtectedRoute>
+          )} />
+          <Route path="/tickets/queue" component={() => (
+            <ProtectedRoute allowedRoles={['agent']}>
+              <AgentLayout>
+                <TicketListPage />
+              </AgentLayout>
+            </ProtectedRoute>
+          )} />
+          <Route path="/tickets/:id" component={() => (
+            <ProtectedRoute allowedRoles={['agent']}>
+              <AgentLayout>
+                <TicketDetailPage />
+              </AgentLayout>
+            </ProtectedRoute>
+          )} />
+        </Route>
 
-              {/* Public Routes */}
-              <Route path="/unauthorized" component={() => (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <h1 className="text-2xl font-bold mb-2">Unauthorized Access</h1>
-                    <p className="text-gray-600">
-                      You don't have permission to access this page.
-                    </p>
-                  </div>
-                </div>
-              )} />
+        {/* Admin Routes */}
+        <Route path="/admin">
+          <Route path="/dashboard" component={() => (
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AgentLayout>
+                <Dashboard />
+              </AgentLayout>
+            </ProtectedRoute>
+          )} />
+          <Route path="/tickets/all" component={() => (
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AgentLayout>
+                <TicketListPage />
+              </AgentLayout>
+            </ProtectedRoute>
+          )} />
+          <Route path="/settings" component={() => (
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AgentLayout>
+                <div>Settings Page</div>
+              </AgentLayout>
+            </ProtectedRoute>
+          )} />
+        </Route>
 
-              <Route component={NotFound} />
-            </Switch>
-          </main>
-        </div>
-        <Footer />
-      </div>
+        {/* Fallback Routes */}
+        <Route path="/unauthorized" component={() => (
+          <PublicLayout>
+            <div className="flex items-center justify-center h-screen">
+              <div className="text-center">
+                <h1 className="text-2xl font-bold mb-2">Unauthorized Access</h1>
+                <p className="text-gray-600">
+                  You don't have permission to access this page.
+                </p>
+              </div>
+            </div>
+          </PublicLayout>
+        )} />
+        <Route component={NotFound} />
+      </Switch>
       <Toaster />
     </QueryClientProvider>
   );
