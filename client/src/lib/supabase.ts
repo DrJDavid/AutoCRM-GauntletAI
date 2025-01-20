@@ -15,21 +15,6 @@ export const supabase = createClient(
   }
 );
 
-export const subscribeToTickets = (callback: (payload: any) => void) => {
-  const channel = supabase
-    .channel('tickets')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'tickets' },
-      callback
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
-};
-
 // Helper function to verify organization access
 export const verifyOrganizationAccess = async (organizationSlug: string) => {
   const { data: organization, error } = await supabase
@@ -59,20 +44,4 @@ export const getUserProfile = async (userId: string) => {
 
   if (error) throw error;
   return profile;
-};
-
-// Helper function to subscribe to organization changes
-export const subscribeToOrganization = (organizationId: string, callback: (payload: any) => void) => {
-  const channel = supabase
-    .channel(`org-${organizationId}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'organizations', filter: `id=eq.${organizationId}` },
-      callback
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
 };

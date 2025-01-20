@@ -53,7 +53,7 @@ export default function TeamRegister() {
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     try {
       setIsLoading(true);
-      
+
       // Create the organization first
       const orgSlug = values.organizationName
         .toLowerCase()
@@ -102,9 +102,10 @@ export default function TeamRegister() {
         title: 'Registration successful!',
         description: 'Please check your email to verify your account.',
       });
-      
+
       setLocation('/auth/team/login');
     } catch (error) {
+      console.error('Registration error:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
