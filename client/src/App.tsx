@@ -16,19 +16,21 @@ import TeamAcceptInvite from '@/pages/auth/team/AcceptInvite';
 import CustomerLogin from '@/pages/auth/customer/Login';
 import CustomerRegister from '@/pages/auth/customer/Register';
 
-// Protected Pages
+// Organization Pages
 import OrganizationSetup from '@/pages/org/Setup';
-import OrganizationInvite from '@/pages/org/Invite';
-import OrganizationSettings from '@/pages/org/Settings';
-import AdminDashboard from '@/pages/admin/Dashboard';
-import AgentDashboard from '@/pages/agent/Dashboard';
-import CustomerPortal from '@/pages/portal/Dashboard';
-import TicketList from '@/pages/tickets/List';
-import TicketDetail from '@/pages/tickets/Detail';
 import NotFound from '@/pages/not-found';
 
 // Types
 import type { UserRole } from '@/types';
+
+// Placeholder Components
+const OrganizationInvite = () => <div>Organization Invite Page</div>;
+const OrganizationSettings = () => <div>Organization Settings Page</div>;
+const AdminDashboard = () => <div>Admin Dashboard</div>;
+const AgentDashboard = () => <div>Agent Dashboard</div>;
+const CustomerPortal = () => <div>Customer Portal</div>;
+const TicketList = () => <div>Ticket List</div>;
+const TicketDetail = () => <div>Ticket Detail</div>;
 
 function ProtectedRoute({ 
   children, 
