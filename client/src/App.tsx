@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Switch, Route, Redirect, Link } from 'wouter';
+import { Switch, Route, Link } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { useUserStore } from '@/stores/userStore';
@@ -8,14 +8,26 @@ import { Button } from '@/components/ui/button';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
-import Login from '@/pages/auth/Login';
-import Register from '@/pages/auth/Register';
-import ResetPassword from '@/pages/auth/ResetPassword';
-import Dashboard from '@/pages/Dashboard';
-import TicketListPage from '@/pages/TicketListPage';
-import TicketDetailPage from '@/pages/TicketDetailPage';
-import CustomerPortal from '@/pages/CustomerPortal';
+
+// Auth Pages
+import TeamLogin from '@/pages/auth/team/Login';
+import TeamRegister from '@/pages/auth/team/Register';
+import TeamAcceptInvite from '@/pages/auth/team/AcceptInvite';
+import CustomerLogin from '@/pages/auth/customer/Login';
+import CustomerRegister from '@/pages/auth/customer/Register';
+
+// Protected Pages
+import OrganizationSetup from '@/pages/org/Setup';
+import OrganizationInvite from '@/pages/org/Invite';
+import OrganizationSettings from '@/pages/org/Settings';
+import AdminDashboard from '@/pages/admin/Dashboard';
+import AgentDashboard from '@/pages/agent/Dashboard';
+import CustomerPortal from '@/pages/portal/Dashboard';
+import TicketList from '@/pages/tickets/List';
+import TicketDetail from '@/pages/tickets/Detail';
 import NotFound from '@/pages/not-found';
+
+// Types
 import type { UserRole } from '@/types';
 
 function ProtectedRoute({ 
@@ -32,11 +44,11 @@ function ProtectedRoute({
   }
 
   if (!isAuthenticated) {
-    return <Redirect to="/login" />;
+    return <Link href="/auth/team/login" />;
   }
 
   if (!currentUser || !allowedRoles.includes(currentUser.role)) {
-    return <Redirect to="/unauthorized" />;
+    return <Link href="/unauthorized" />;
   }
 
   return <>{children}</>;
@@ -66,12 +78,6 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const { checkAuth } = useUserStore();
-
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
   return (
     <QueryClientProvider client={queryClient}>
       <Switch>
@@ -88,60 +94,23 @@ function App() {
                       <span className="block text-primary">Made Simple</span>
                     </h1>
                     <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-                      Streamline your customer support operations with our intuitive ticket management system. Handle inquiries efficiently and provide exceptional service.
+                      Streamline your customer support operations with our intuitive ticket management system.
                     </p>
                     <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
                       <div className="rounded-md shadow">
-                        <Link href="/register">
+                        <Link href="/auth/team/register">
                           <Button size="lg" className="w-full sm:w-auto">
-                            Get Started
+                            Create Organization
                           </Button>
                         </Link>
                       </div>
                       <div className="mt-3 sm:mt-0 sm:ml-3">
-                        <Link href="/login">
+                        <Link href="/auth/customer/register">
                           <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                            Sign In
+                            Customer Sign Up
                           </Button>
                         </Link>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Feature Section */}
-              <div className="py-12 bg-white">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                  <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                    {/* Feature 1 */}
-                    <div className="relative p-6 bg-white border rounded-lg shadow-sm">
-                      <h3 className="text-lg font-medium text-gray-900">
-                        Ticket Management
-                      </h3>
-                      <p className="mt-2 text-base text-gray-500">
-                        Efficiently manage and track customer support tickets from creation to resolution.
-                      </p>
-                    </div>
-
-                    {/* Feature 2 */}
-                    <div className="relative p-6 bg-white border rounded-lg shadow-sm">
-                      <h3 className="text-lg font-medium text-gray-900">
-                        Customer Portal
-                      </h3>
-                      <p className="mt-2 text-base text-gray-500">
-                        Empower customers with self-service options and ticket tracking capabilities.
-                      </p>
-                    </div>
-
-                    {/* Feature 3 */}
-                    <div className="relative p-6 bg-white border rounded-lg shadow-sm">
-                      <h3 className="text-lg font-medium text-gray-900">
-                        Analytics Dashboard
-                      </h3>
-                      <p className="mt-2 text-base text-gray-500">
-                        Gain insights into support performance with comprehensive analytics and reporting.
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -150,89 +119,68 @@ function App() {
           </PublicLayout>
         )} />
 
-        <Route path="/login" component={Login} />
-        <Route path="/register" component={Register} />
-        <Route path="/reset-password" component={ResetPassword} />
-        <Route path="/kb" component={() => (
-          <PublicLayout>
-            <div>Public Knowledge Base</div>
-          </PublicLayout>
+        {/* Auth Routes */}
+        <Route path="/auth/team/login" component={TeamLogin} />
+        <Route path="/auth/team/register" component={TeamRegister} />
+        <Route path="/auth/team/accept-invite" component={TeamAcceptInvite} />
+        <Route path="/auth/customer/login" component={CustomerLogin} />
+        <Route path="/auth/customer/register" component={CustomerRegister} />
+
+        {/* Organization Setup & Management */}
+        <Route path="/org/setup" component={() => (
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AgentLayout>
+              <OrganizationSetup />
+            </AgentLayout>
+          </ProtectedRoute>
+        )} />
+        <Route path="/org/invite" component={() => (
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AgentLayout>
+              <OrganizationInvite />
+            </AgentLayout>
+          </ProtectedRoute>
+        )} />
+        <Route path="/org/settings" component={() => (
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AgentLayout>
+              <OrganizationSettings />
+            </AgentLayout>
+          </ProtectedRoute>
         )} />
 
-        {/* Customer Portal Routes */}
-        <Route path="/portal">
-          <Route path="/dashboard" component={() => (
-            <ProtectedRoute allowedRoles={['customer']}>
-              <AgentLayout>
-                <CustomerPortal />
-              </AgentLayout>
-            </ProtectedRoute>
-          )} />
-          <Route path="/tickets/new" component={() => (
-            <ProtectedRoute allowedRoles={['customer']}>
-              <AgentLayout>
-                <div>New Ticket Form</div>
-              </AgentLayout>
-            </ProtectedRoute>
-          )} />
-          <Route path="/tickets/:id" component={() => (
-            <ProtectedRoute allowedRoles={['customer']}>
-              <AgentLayout>
-                <TicketDetailPage />
-              </AgentLayout>
-            </ProtectedRoute>
-          )} />
-        </Route>
+        {/* Admin Routes */}
+        <Route path="/admin/dashboard" component={() => (
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AgentLayout>
+              <AdminDashboard />
+            </AgentLayout>
+          </ProtectedRoute>
+        )} />
 
         {/* Agent Routes */}
-        <Route path="/agent">
-          <Route path="/dashboard" component={() => (
-            <ProtectedRoute allowedRoles={['agent']}>
-              <AgentLayout>
-                <Dashboard />
-              </AgentLayout>
-            </ProtectedRoute>
-          )} />
-          <Route path="/tickets/queue" component={() => (
-            <ProtectedRoute allowedRoles={['agent']}>
-              <AgentLayout>
-                <TicketListPage />
-              </AgentLayout>
-            </ProtectedRoute>
-          )} />
-          <Route path="/tickets/:id" component={() => (
-            <ProtectedRoute allowedRoles={['agent']}>
-              <AgentLayout>
-                <TicketDetailPage />
-              </AgentLayout>
-            </ProtectedRoute>
-          )} />
-        </Route>
+        <Route path="/agent/dashboard" component={() => (
+          <ProtectedRoute allowedRoles={['agent']}>
+            <AgentLayout>
+              <AgentDashboard />
+            </AgentLayout>
+          </ProtectedRoute>
+        )} />
+        <Route path="/agent/tickets" component={() => (
+          <ProtectedRoute allowedRoles={['agent']}>
+            <AgentLayout>
+              <TicketList />
+            </AgentLayout>
+          </ProtectedRoute>
+        )} />
 
-        {/* Admin Routes */}
-        <Route path="/admin">
-          <Route path="/dashboard" component={() => (
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AgentLayout>
-                <Dashboard />
-              </AgentLayout>
-            </ProtectedRoute>
-          )} />
-          <Route path="/tickets/all" component={() => (
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AgentLayout>
-                <TicketListPage />
-              </AgentLayout>
-            </ProtectedRoute>
-          )} />
-          <Route path="/settings" component={() => (
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AgentLayout>
-                <div>Settings Page</div>
-              </AgentLayout>
-            </ProtectedRoute>
-          )} />
-        </Route>
+        {/* Customer Routes */}
+        <Route path="/portal/dashboard" component={() => (
+          <ProtectedRoute allowedRoles={['customer']}>
+            <CustomerPortal />
+          </ProtectedRoute>
+        )} />
+        <Route path="/portal/tickets/:id" component={TicketDetail} />
 
         {/* Fallback Routes */}
         <Route path="/unauthorized" component={() => (
