@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
+import Login from '@/pages/auth/Login';
+import Register from '@/pages/auth/Register';
+import ResetPassword from '@/pages/auth/ResetPassword';
 import Dashboard from '@/pages/Dashboard';
 import TicketListPage from '@/pages/TicketListPage';
 import TicketDetailPage from '@/pages/TicketDetailPage';
@@ -75,39 +78,81 @@ function App() {
         {/* Public Routes */}
         <Route path="/" component={() => (
           <PublicLayout>
-            <div className="min-h-screen flex flex-col items-center justify-center p-4">
-              <div className="max-w-3xl w-full space-y-6 text-center">
-                <h1 className="text-4xl font-bold tracking-tight">Welcome to AutoCRM</h1>
-                <p className="text-xl text-gray-600">
-                  Your modern customer support solution
-                </p>
-                <div className="flex gap-4 justify-center">
-                  <Link href="/login">
-                    <Button size="lg">Login</Button>
-                  </Link>
-                  <Link href="/register">
-                    <Button size="lg" variant="outline">Register</Button>
-                  </Link>
+            <div className="min-h-screen flex flex-col items-center">
+              {/* Hero Section */}
+              <div className="w-full bg-gradient-to-b from-white to-gray-50 border-b">
+                <div className="max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
+                  <div className="text-center">
+                    <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
+                      <span className="block">Modern Customer Support</span>
+                      <span className="block text-primary">Made Simple</span>
+                    </h1>
+                    <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+                      Streamline your customer support operations with our intuitive ticket management system. Handle inquiries efficiently and provide exceptional service.
+                    </p>
+                    <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
+                      <div className="rounded-md shadow">
+                        <Link href="/register">
+                          <Button size="lg" className="w-full sm:w-auto">
+                            Get Started
+                          </Button>
+                        </Link>
+                      </div>
+                      <div className="mt-3 sm:mt-0 sm:ml-3">
+                        <Link href="/login">
+                          <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                            Sign In
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Feature Section */}
+              <div className="py-12 bg-white">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                    {/* Feature 1 */}
+                    <div className="relative p-6 bg-white border rounded-lg shadow-sm">
+                      <h3 className="text-lg font-medium text-gray-900">
+                        Ticket Management
+                      </h3>
+                      <p className="mt-2 text-base text-gray-500">
+                        Efficiently manage and track customer support tickets from creation to resolution.
+                      </p>
+                    </div>
+
+                    {/* Feature 2 */}
+                    <div className="relative p-6 bg-white border rounded-lg shadow-sm">
+                      <h3 className="text-lg font-medium text-gray-900">
+                        Customer Portal
+                      </h3>
+                      <p className="mt-2 text-base text-gray-500">
+                        Empower customers with self-service options and ticket tracking capabilities.
+                      </p>
+                    </div>
+
+                    {/* Feature 3 */}
+                    <div className="relative p-6 bg-white border rounded-lg shadow-sm">
+                      <h3 className="text-lg font-medium text-gray-900">
+                        Analytics Dashboard
+                      </h3>
+                      <p className="mt-2 text-base text-gray-500">
+                        Gain insights into support performance with comprehensive analytics and reporting.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </PublicLayout>
         )} />
-        <Route path="/login" component={() => (
-          <PublicLayout>
-            <div>Login Page</div>
-          </PublicLayout>
-        )} />
-        <Route path="/register" component={() => (
-          <PublicLayout>
-            <div>Register Page</div>
-          </PublicLayout>
-        )} />
-        <Route path="/reset-password" component={() => (
-          <PublicLayout>
-            <div>Reset Password Page</div>
-          </PublicLayout>
-        )} />
+
+        <Route path="/login" component={Login} />
+        <Route path="/register" component={Register} />
+        <Route path="/reset-password" component={ResetPassword} />
         <Route path="/kb" component={() => (
           <PublicLayout>
             <div>Public Knowledge Base</div>

@@ -2,6 +2,18 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
+// Check required environment variables
+const requiredEnvVars = [
+  'VITE_SUPABASE_URL',
+  'VITE_SUPABASE_ANON_KEY'
+];
+
+requiredEnvVars.forEach(envVar => {
+  if (!process.env[envVar]) {
+    throw new Error(`Missing required environment variable: ${envVar}`);
+  }
+});
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -47,19 +59,50 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client
-  const PORT = 5000;
-  server.listen(PORT, "0.0.0.0", () => {
-    log(`serving on port ${PORT}`);
-  });
+  // Port retry mechanism
+  const startServer = async (retries = 3) => {
+    const BASE_PORT = 5000;
+
+    for (let i = 0; i < retries; i++) {
+      const port = BASE_PORT + i;
+      try {
+        await new Promise((resolve, reject) => {
+          const instance = server.listen(port, "0.0.0.0", () => {
+            log(`Server running on port ${port}`);
+            resolve(instance);
+          });
+
+          instance.on('error', (error: any) => {
+            if (error.code === 'EADDRINUSE') {
+              log(`Port ${port} is in use, trying next port...`);
+              instance.close();
+              if (i === retries - 1) {
+                reject(new Error(`Could not find an available port after ${retries} attempts`));
+              }
+            } else {
+              reject(error);
+            }
+          });
+        });
+        break;
+      } catch (error) {
+        if (i === retries - 1) {
+          throw error;
+        }
+      }
+    }
+  };
+
+  try {
+    await startServer();
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
 })();
