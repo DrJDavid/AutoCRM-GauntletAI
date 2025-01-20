@@ -1,0 +1,195 @@
+# AutoCRM Frontend Scaffold Requirements
+
+## Project Overview
+Build a modern Customer Relationship Management (CRM) frontend with a focus on ticket management, featuring both customer portal and agent interfaces. The architecture should prioritize AI-first development principles, emphasizing code organization that's optimal for AI maintenance and enhancement.
+
+## Technical Stack (Required)
+- Framework: React 18+ with TypeScript
+- Build Tool: Vite
+- Routing: React Router v6
+- State Management: Zustand
+- UI: shadcn/ui + Tailwind CSS
+- Backend: Supabase
+- Testing: Vitest + React Testing Library
+- Real-time: Supabase Realtime
+
+## Integration Requirements
+- Supabase Auth for authentication
+- Supabase Database for data persistence
+- Supabase Realtime for live updates
+- Row Level Security (RLS) policies for authorization
+
+## Core Features & Pages
+
+### Agent Dashboard
+```typescript
+interface AgentDashboardFeatures {
+  ticketQueue: {
+    filtering: boolean;
+    sorting: boolean;
+    search: boolean;
+    bulkActions: boolean;
+    realTimeUpdates: boolean;
+  };
+  metrics: {
+    openTickets: number;
+    avgResponseTime: string;
+    resolutionRate: number;
+  };
+}
+```
+
+### Ticket Management
+```typescript
+interface TicketFeatures {
+  conversation: {
+    history: boolean;
+    richTextEditor: boolean;
+    internalNotes: boolean;
+    fileAttachments: boolean;
+  };
+  metadata: {
+    priority: 'low' | 'medium' | 'high' | 'urgent';
+    status: 'new' | 'open' | 'pending' | 'resolved' | 'closed';
+    tags: string[];
+    customFields: Record<string, unknown>;
+  };
+}
+```
+
+### Customer Portal
+```typescript
+interface CustomerPortalFeatures {
+  authentication: boolean;
+  ticketSubmission: boolean;
+  ticketTracking: boolean;
+  knowledgeBase: boolean;
+}
+```
+
+## Project Structure
+```
+src/
+  ├── components/
+  │   ├── tickets/
+  │   ├── agents/
+  │   ├── customers/
+  │   └── shared/
+  ├── hooks/
+  │   ├── useTickets.ts
+  │   ├── useAgents.ts
+  │   └── useRealtime.ts
+  ├── lib/
+  │   ├── supabase.ts
+  │   └── utils.ts
+  ├── pages/
+  │   ├── Dashboard.tsx
+  │   ├── TicketList.tsx
+  │   └── TicketDetail.tsx
+  ├── stores/
+  │   ├── ticketStore.ts
+  │   └── userStore.ts
+  └── types/
+      └── index.ts
+```
+
+## Required Components
+
+### Core Components
+```typescript
+interface RequiredComponents {
+  layout: {
+    Header: React.FC;
+    Sidebar: React.FC;
+    Footer: React.FC;
+  };
+  tickets: {
+    TicketList: React.FC<TicketListProps>;
+    TicketDetail: React.FC<TicketDetailProps>;
+    TicketForm: React.FC<TicketFormProps>;
+  };
+  shared: {
+    RichTextEditor: React.FC<RichTextEditorProps>;
+    FileUpload: React.FC<FileUploadProps>;
+    StatusBadge: React.FC<StatusBadgeProps>;
+  };
+}
+```
+
+### Stores Structure
+```typescript
+interface StoreStructure {
+  ticketStore: {
+    tickets: Ticket[];
+    selectedTicket: Ticket | null;
+    filters: TicketFilters;
+    actions: {
+      fetchTickets: () => Promise<void>;
+      updateTicket: (ticket: Ticket) => Promise<void>;
+      deleteTicket: (id: string) => Promise<void>;
+    };
+  };
+  userStore: {
+    currentUser: User | null;
+    isAuthenticated: boolean;
+    actions: {
+      login: (credentials: Credentials) => Promise<void>;
+      logout: () => Promise<void>;
+    };
+  };
+}
+```
+
+## Development Considerations
+
+### AI-First Development
+- Prefer single-file components when possible
+- Keep related code together for better AI context
+- Use TypeScript interfaces for better type inference
+- Implement proper error boundaries for AI-generated responses
+
+### Supabase Integration
+```typescript
+interface SupabaseRequirements {
+  auth: {
+    signIn: () => Promise<void>;
+    signUp: () => Promise<void>;
+    signOut: () => Promise<void>;
+  };
+  realtime: {
+    ticketSubscription: () => void;
+    presenceTracking: () => void;
+  };
+  storage: {
+    fileUpload: () => Promise<void>;
+    fileDelete: () => Promise<void>;
+  };
+}
+```
+
+### Performance Requirements
+- Implement proper loading states
+- Use optimistic updates for real-time features
+- Implement proper error handling
+- Use proper caching strategies
+
+## Deliverables
+
+### Required
+1. Complete React + TypeScript project scaffold
+2. Working Supabase integration
+3. Implemented authentication flow
+4. Basic ticket management functionality
+5. Real-time updates implementation
+
+### Documentation
+1. README.md with setup instructions
+2. Environment variables documentation
+3. Component documentation
+4. API integration documentation
+
+## Testing Requirements
+- Unit tests for core functionality
+- Integration tests for critical paths
+- Supabase mocking utilities
+- Real-time testing utilities
