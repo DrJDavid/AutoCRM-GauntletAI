@@ -24,6 +24,7 @@ interface UserState {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: AuthCredentials) => Promise<void>;
+  signUp: (email: string, password: string, role: string, organizationId?: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -98,5 +99,50 @@ export const useUserStore = create<UserState>((set) => ({
   logout: async () => {
     await supabase.auth.signOut();
     set({ currentUser: null, isAuthenticated: false });
+  },
+
+  signUp: async (email: string, password: string, role: string, organizationId?: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          role,
+          organization_id: organizationId
+        }
+      }
+    });
+
+    if (error) throw error;
+
+    if (data.user) {
+      // Create profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: data.user.id,
+            email: data.user.email,
+            role: role,
+            organization_id: organizationId
+          }
+        ]);
+
+      if (profileError) throw profileError;
+
+      set({
+        currentUser: {
+          id: data.user.id,
+          email: data.user.email!,
+          role: role as 'admin' | 'agent' | 'customer',
+          organization: organizationId ? {
+            id: organizationId,
+            name: '', // Will be populated on next auth check
+            slug: ''
+          } : undefined
+        },
+        isAuthenticated: true
+      });
+    }
   }
 }));

@@ -21,48 +21,57 @@ export default function Landing() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Organization Management */}
+          {/* Organization Creation & Access */}
           <div className="space-y-3">
             <h2 className="text-lg font-semibold">Organizations</h2>
             <div className="grid grid-cols-2 gap-3">
               <Button 
                 variant="default" 
                 className="w-full"
-                onClick={() => setLocation('/auth/team/register')}
+                onClick={() => setLocation('/org/new')}
               >
-                New Organization
+                Create Organization
               </Button>
               <Button 
                 variant="outline" 
                 className="w-full"
-                onClick={() => setLocation('/auth/team/login')}
+                onClick={() => setLocation('/org/login')}
               >
-                Organization Sign In
+                Sign In to Organization
               </Button>
             </div>
           </div>
 
-          {/* Team Member */}
+          {/* Team Member & Customer Access */}
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold">Team Members</h2>
-            <Button 
-              variant="secondary" 
-              className="w-full"
-              onClick={() => setLocation('/auth/team/join')}
-            >
-              New Team Member
-            </Button>
+            <h2 className="text-lg font-semibold">Have an Invite?</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <Button 
+                variant="secondary" 
+                className="w-full"
+                onClick={() => setLocation('/auth/team/accept-invite')}
+              >
+                Accept Team Invite
+              </Button>
+              <Button 
+                variant="secondary" 
+                className="w-full"
+                onClick={() => setLocation('/auth/customer/accept-invite')}
+              >
+                Accept Customer Invite
+              </Button>
+            </div>
           </div>
 
           {/* Customer Portal */}
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold">Customers</h2>
+            <h2 className="text-lg font-semibold">Existing Customer?</h2>
             <Button 
-              variant="secondary" 
+              variant="outline" 
               className="w-full"
               onClick={() => setLocation('/portal')}
             >
-              Customer Portal
+              Access Customer Portal
             </Button>
           </div>
         </CardContent>

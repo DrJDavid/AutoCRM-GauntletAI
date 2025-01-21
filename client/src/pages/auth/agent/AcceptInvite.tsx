@@ -34,10 +34,6 @@ const acceptInviteSchema = z.object({
   path: ["confirmPassword"],
 });
 
-interface Organization {
-  name: string;
-}
-
 interface InviteData {
   email: string;
   token: string;
@@ -69,7 +65,7 @@ export default function AcceptInvite() {
         title: 'Invalid invitation',
         description: 'No invitation token found.',
       });
-      setLocation('/auth/customer/login');
+      setLocation('/auth/agent/login');
       return;
     }
 
@@ -77,7 +73,7 @@ export default function AcceptInvite() {
     const verifyInvite = async () => {
       try {
         const { data: invite, error } = await supabase
-          .from('customer_organization_invites')
+          .from('agent_organization_invites')
           .select(`
             email,
             token,
@@ -95,7 +91,6 @@ export default function AcceptInvite() {
           throw new Error('Invitation not found or already accepted');
         }
 
-        // Fix the type error by accessing the first organization
         const organization = invite.organizations[0] as { name: string };
 
         setInviteData({
@@ -109,7 +104,7 @@ export default function AcceptInvite() {
           title: 'Invalid invitation',
           description: error instanceof Error ? error.message : 'Failed to verify invitation',
         });
-        setLocation('/auth/customer/login');
+        setLocation('/auth/agent/login');
       }
     };
 
@@ -127,9 +122,9 @@ export default function AcceptInvite() {
         email: inviteData.email,
         password: values.password,
         options: {
-          emailRedirectTo: 'http://localhost:5000/auth/customer/login',
+          emailRedirectTo: 'http://localhost:5000/auth/agent/login',
           data: {
-            role: 'customer',
+            role: 'agent',
           },
         },
       });
@@ -149,7 +144,7 @@ export default function AcceptInvite() {
 
       // Accept the invite
       const { error: acceptError } = await supabase.rpc(
-        'accept_customer_invite',
+        'accept_agent_invite',
         { invite_token: inviteData.token }
       );
 
@@ -165,7 +160,7 @@ export default function AcceptInvite() {
 
       // Add a delay before redirect to ensure user sees the message
       await new Promise(resolve => setTimeout(resolve, 2000));
-      setLocation('/auth/customer/login');
+      setLocation('/auth/agent/login');
     } catch (error: any) {
       console.error('Full error details:', {
         error,
@@ -204,10 +199,10 @@ export default function AcceptInvite() {
       <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold">Accept Customer Invitation</CardTitle>
+            <CardTitle className="text-2xl font-bold">Accept Agent Invitation</CardTitle>
             <CardDescription>
-              You've been invited to join {inviteData.organizationName} as a customer.
-              Set up your password to create your account.
+              You've been invited to join {inviteData.organizationName} as a support agent.
+              Set up your password to complete your account.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -267,7 +262,7 @@ export default function AcceptInvite() {
           </CardContent>
           <CardFooter className="text-sm text-center">
             Already have an account?{' '}
-            <Link href="/auth/customer/login" className="text-primary hover:underline">
+            <Link href="/auth/agent/login" className="text-primary hover:underline">
               Login
             </Link>
           </CardFooter>

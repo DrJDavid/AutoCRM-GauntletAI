@@ -11,7 +11,8 @@ import {
   InboxIcon,
   FileText,
   BarChart,
-  UserPlus
+  UserPlus,
+  UserCog
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -114,6 +115,12 @@ const navigation: NavigationItem[] = [
     href: '/admin/settings', 
     icon: Settings,
     roles: ['admin']
+  },
+  {
+    name: 'Manage Agents',
+    href: '/org/agents/invite',
+    icon: UserCog,
+    roles: ['admin'],
   },
 
   // Common Navigation

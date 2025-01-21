@@ -1,12 +1,8 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useUserStore } from '@/stores/userStore';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
-import { useUserStore } from '@/stores/userStore';
-import { Button } from '@/components/ui/button';
+import { Loader2, Send, Plus, X } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -14,18 +10,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Loader2, Send, Plus, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-export default function CustomerInvite() {
+export default function AgentInvite() {
   const { currentUser } = useUserStore();
   const { toast } = useToast();
   const [emails, setEmails] = useState<string[]>(['']);
@@ -70,23 +58,23 @@ export default function CustomerInvite() {
     setIsLoading(true);
 
     try {
-      // Create customer invites
+      // Create agent invites
       for (const email of validEmails) {
-        console.log('Sending invite with:', {
+        console.log('Sending agent invite with:', {
           org_id: currentUser.organization.id,
-          customer_email: email
+          agent_email: email
         });
 
         const { data, error } = await supabase.rpc(
-          'create_customer_invite',
+          'create_agent_invite',
           {
             org_id: currentUser.organization.id,
-            customer_email: email
+            agent_email: email
           }
         );
 
         if (error) {
-          console.error('Customer invite error details:', {
+          console.error('Agent invite error details:', {
             message: error.message,
             details: error.details,
             hint: error.hint,
@@ -96,18 +84,18 @@ export default function CustomerInvite() {
             full: JSON.stringify(error, null, 2),
             requestData: {
               org_id: currentUser.organization.id,
-              customer_email: email
+              agent_email: email
             }
           });
           throw error;
         }
 
-        console.log('Invite created:', data);
+        console.log('Agent invite created:', data);
       }
 
       toast({
         title: 'Success',
-        description: 'Customer invitations sent successfully',
+        description: 'Agent invitations sent successfully',
       });
 
       // Reset form
@@ -128,9 +116,9 @@ export default function CustomerInvite() {
     <div className="p-8 max-w-2xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>Invite Customers</CardTitle>
+          <CardTitle>Invite Support Agents</CardTitle>
           <CardDescription>
-            Invite customers to create support tickets for your organization
+            Invite agents to help manage support tickets for your organization
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -138,7 +126,7 @@ export default function CustomerInvite() {
             <div key={index} className="flex gap-2">
               <Input
                 type="email"
-                placeholder="customer@example.com"
+                placeholder="agent@example.com"
                 value={email}
                 onChange={(e) => handleEmailChange(index, e.target.value)}
                 disabled={isLoading}

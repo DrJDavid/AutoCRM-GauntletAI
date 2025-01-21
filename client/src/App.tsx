@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, lazy } from 'react';
 import { Switch, Route, Link } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
+import { PortalLayout } from '@/components/layout/PortalLayout';
 
 // Auth Pages
 import TeamLogin from '@/pages/auth/team/Login';
@@ -21,6 +22,8 @@ import ResetPassword from '@/pages/auth/ResetPassword';
 import CustomerAcceptInvite from '@/pages/auth/customer/AcceptInvite';
 
 // Organization Pages
+import OrganizationNew from '@/pages/org/New';
+import OrganizationLogin from '@/pages/org/Login';
 import OrganizationSetup from '@/pages/org/Setup';
 import NotFound from '@/pages/not-found';
 
@@ -42,6 +45,7 @@ import CustomerPortal from '@/pages/portal';
 import KnowledgeBase from '@/pages/portal/kb';
 import Support from '@/pages/portal/support';
 import CustomerInvite from '@/pages/org/CustomerInvite';
+import AgentInvite from '@/pages/org/AgentInvite';
 
 function ProtectedRoute({ 
   children, 
@@ -103,36 +107,26 @@ function App() {
         {/* Public Routes */}
         <Route path="/" component={Landing} />
         
-        {/* Auth Routes */}
-        <Route path="/auth/team/login" component={TeamLogin} />
-        <Route path="/auth/team/register" component={TeamRegister} />
-        <Route path="/auth/team/join" component={TeamJoin} />
+        {/* Organization Routes */}
+        <Route path="/org/new" component={OrganizationNew} />
+        <Route path="/org/login" component={OrganizationLogin} />
+        <Route path="/org/setup" component={OrganizationSetup} />
+        
+        {/* Team Member Routes */}
         <Route path="/auth/team/accept-invite" component={TeamAcceptInvite} />
-        <Route path="/auth/customer/login" component={CustomerLogin} />
-        <Route path="/auth/customer/register" component={CustomerRegister} />
-        <Route path="/auth/reset-password" component={ResetPassword} />
+        <Route path="/auth/team/login" component={TeamLogin} />
+        
+        {/* Customer Routes */}
         <Route path="/auth/customer/accept-invite" component={CustomerAcceptInvite} />
+        <Route path="/auth/customer/login" component={CustomerLogin} />
+        <Route path="/auth/reset-password" component={ResetPassword} />
 
         {/* Customer Portal */}
         <Route path="/portal" component={CustomerPortal} />
         <Route path="/portal/kb" component={KnowledgeBase} />
         <Route path="/portal/support" component={Support} />
 
-        {/* Organization Setup & Management */}
-        <Route path="/org/setup" component={() => (
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AgentLayout>
-              <OrganizationSetup />
-            </AgentLayout>
-          </ProtectedRoute>
-        )} />
-        <Route path="/org/invite" component={() => (
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AgentLayout>
-              <OrganizationInvite />
-            </AgentLayout>
-          </ProtectedRoute>
-        )} />
+        {/* Protected Organization Routes */}
         <Route path="/org/customers/invite" component={() => (
           <ProtectedRoute allowedRoles={['admin', 'agent']}>
             <AgentLayout>
@@ -140,15 +134,16 @@ function App() {
             </AgentLayout>
           </ProtectedRoute>
         )} />
-        <Route path="/org/settings" component={() => (
+
+        <Route path="/org/agents/invite" component={() => (
           <ProtectedRoute allowedRoles={['admin']}>
             <AgentLayout>
-              <OrganizationSettings />
+              <AgentInvite />
             </AgentLayout>
           </ProtectedRoute>
         )} />
 
-        {/* Admin Routes */}
+        {/* Protected Admin Routes */}
         <Route path="/admin/dashboard" component={() => (
           <ProtectedRoute allowedRoles={['admin']}>
             <AgentLayout>
@@ -157,7 +152,7 @@ function App() {
           </ProtectedRoute>
         )} />
 
-        {/* Agent Routes */}
+        {/* Protected Agent Routes */}
         <Route path="/agent/dashboard" component={() => (
           <ProtectedRoute allowedRoles={['agent']}>
             <AgentLayout>
@@ -165,16 +160,21 @@ function App() {
             </AgentLayout>
           </ProtectedRoute>
         )} />
-        <Route path="/agent/tickets" component={() => (
-          <ProtectedRoute allowedRoles={['agent']}>
-            <AgentLayout>
-              <TicketList />
-            </AgentLayout>
+
+        {/* Protected Customer Routes */}
+        <Route path="/portal/tickets/:id" component={() => (
+          <ProtectedRoute allowedRoles={['customer']}>
+            <PortalLayout>
+              <TicketDetail />
+            </PortalLayout>
           </ProtectedRoute>
         )} />
 
-        {/* Customer Routes */}
-        <Route path="/portal/tickets/:id" component={TicketDetail} />
+        {/* Customer Auth Routes */}
+        <Route path="/auth/customer/accept-invite" component={CustomerAcceptInvite} />
+        
+        {/* Agent Auth Routes */}
+        <Route path="/auth/agent/accept-invite" component={lazy(() => import('@/pages/auth/agent/AcceptInvite'))} />
 
         {/* Fallback Routes */}
         <Route path="/unauthorized" component={() => (

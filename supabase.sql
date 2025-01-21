@@ -58,8 +58,8 @@ create policy "Profiles are viewable by organization members"
       select p2.id from profiles p2 
       where p2.organization_id = profiles.organization_id
     )
-    or auth.uid() = id
-  );
+  or auth.uid() = id
+);
 
 create policy "Users can update their own profile" 
   on profiles for update using (auth.uid() = id);
@@ -854,3 +854,144 @@ create policy "Organization members can view customer relationships"
       where profiles.organization_id = customer_organizations.organization_id
     )
   );
+
+-- Create agent invite table
+create table if not exists public.agent_organization_invites (
+    id uuid default gen_random_uuid() primary key,
+    organization_id uuid references public.organizations not null,
+    email text not null,
+    token uuid default gen_random_uuid() not null,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    expires_at timestamp with time zone not null,
+    accepted boolean default false,
+    unique(organization_id, email)
+);
+
+alter table public.agent_organization_invites enable row level security;
+
+create policy "Agent invites viewable by organization admins"
+  on agent_organization_invites for select using (
+    auth.uid() in (
+      select profiles.id from profiles 
+      where profiles.organization_id = agent_organization_invites.organization_id
+      and role = 'admin'
+    )
+    or email = auth.email()
+  );
+
+create policy "Agent invites creatable by organization admins"
+  on agent_organization_invites for insert with check (
+    auth.uid() in (
+      select profiles.id from profiles 
+      where profiles.organization_id = organization_id
+      and role = 'admin'
+    )
+  );
+
+-- Function to create agent invite
+create or replace function public.create_agent_invite(
+    org_id uuid,
+    agent_email text
+) returns uuid as $$
+declare
+    invite_token uuid;
+begin
+    -- Check if user has admin permission
+    if not exists (
+        select 1 from profiles
+        where id = auth.uid()
+        and organization_id = org_id
+        and role = 'admin'
+    ) then
+        raise exception 'Unauthorized - Only admins can invite agents';
+    end if;
+
+    -- Create invite
+    insert into agent_organization_invites (
+        organization_id,
+        email,
+        expires_at
+    ) values (
+        org_id,
+        agent_email,
+        now() + interval '7 days'
+    ) returning token into invite_token;
+
+    return invite_token;
+end;
+$$ language plpgsql security definer;
+
+-- Function to accept agent invite
+create or replace function public.accept_agent_invite(
+    invite_token uuid
+) returns void as $$
+declare
+    invite_record record;
+begin
+    -- Get and validate invite
+    select * into invite_record
+    from agent_organization_invites
+    where token = invite_token
+    and not accepted
+    and expires_at > now();
+
+    if not found then
+        raise exception 'Invalid or expired invite';
+    end if;
+
+    -- Update profile with organization and role
+    update profiles
+    set 
+        organization_id = invite_record.organization_id,
+        role = 'agent'
+    where id = auth.uid();
+
+    -- Mark invite as accepted
+    update agent_organization_invites
+    set accepted = true
+    where token = invite_token;
+end;
+$$ language plpgsql security definer;
+
+-- Grant execute permissions
+grant execute on function public.create_agent_invite(org_id uuid, agent_email text) to authenticated;
+grant execute on function public.accept_agent_invite(invite_token uuid) to authenticated;
+
+-- Create email notification trigger for agent invites
+create or replace function notify_agent_invite()
+returns trigger as $$
+declare
+  org_name text;
+begin
+  -- Get the organization name
+  SELECT name INTO org_name
+  FROM organizations
+  WHERE id = NEW.organization_id;
+
+  -- Send the invite email
+  PERFORM net.http_post(
+    url := 'https://api.supabase.com/v1/invite-email',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', current_setting('request.headers')::json->>'authorization'
+    ),
+    body := jsonb_build_object(
+      'to', NEW.email,
+      'subject', 'Invitation to join ' || org_name || ' as an Agent',
+      'content', 'You have been invited to join ' || org_name || ' as a support agent. Click the link below to accept the invitation:
+
+' || 'https://auto-crm-gauntlet-ai.vercel.app/auth/agent/accept-invite?token=' || NEW.token::text || '
+
+This invite will expire in 7 days.'
+    )
+  );
+
+  RETURN NEW;
+end;
+$$ language plpgsql SECURITY DEFINER;
+
+-- Create the trigger for agent invites
+create trigger on_agent_invite_created
+  after insert on agent_organization_invites
+  for each row
+  execute function notify_agent_invite();
