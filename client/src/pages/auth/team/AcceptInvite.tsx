@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import { AuthHeader } from '@/components/auth/AuthHeader';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -166,77 +167,80 @@ export default function AcceptInvite() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Accept Invitation</CardTitle>
-          <CardDescription>
-            You've been invited to join {inviteData.organizationName} as a {inviteData.role}.
-            Set up your password to complete your account.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <FormLabel>Email</FormLabel>
-                <Input
-                  type="email"
-                  value={inviteData.email}
-                  disabled
+    <div className="container relative flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
+      <AuthHeader />
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold">Accept Invitation</CardTitle>
+            <CardDescription>
+              You've been invited to join {inviteData.organizationName} as a {inviteData.role}.
+              Set up your password to complete your account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="space-y-2">
+                  <FormLabel>Email</FormLabel>
+                  <Input
+                    type="email"
+                    value={inviteData.email}
+                    disabled
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Create a password"
+                          type="password"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Create a password"
-                        type="password"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Confirm your password"
-                        type="password"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Creating account...' : 'Create account'}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-        <CardFooter className="text-sm text-center">
-          Already have an account?{' '}
-          <Link href="/auth/team/login" className="text-primary hover:underline">
-            Login
-          </Link>
-        </CardFooter>
-      </Card>
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Confirm your password"
+                          type="password"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Creating account...' : 'Create account'}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+          <CardFooter className="text-sm text-center">
+            Already have an account?{' '}
+            <Link href="/auth/team/login" className="text-primary hover:underline">
+              Login
+            </Link>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 }

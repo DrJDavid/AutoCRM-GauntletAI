@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { useUserStore } from '@/stores/userStore';
+import { AuthHeader } from '@/components/auth/AuthHeader';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -71,6 +72,7 @@ export default function CustomerLogin() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+      <AuthHeader />
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Customer Login</CardTitle>
