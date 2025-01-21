@@ -3,7 +3,7 @@ import { Switch, Route, Link } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { useUserStore } from '@/stores/userStore';
-import { Toaster } from '@/components/ui/toaster';
+import { Toaster } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -13,6 +13,8 @@ import { Footer } from '@/components/layout/Footer';
 import TeamLogin from '@/pages/auth/team/Login';
 import TeamRegister from '@/pages/auth/team/Register';
 import TeamAcceptInvite from '@/pages/auth/team/AcceptInvite';
+import TeamJoinRequest from '@/pages/auth/team/TeamJoinRequest';
+import TeamCreateAccount from '@/pages/auth/team/CreateAccount';
 import CustomerLogin from '@/pages/auth/customer/Login';
 import CustomerRegister from '@/pages/auth/customer/Register';
 
@@ -80,6 +82,12 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  const { checkAuth } = useUserStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Switch>
@@ -107,6 +115,13 @@ function App() {
                         </Link>
                       </div>
                       <div className="mt-3 sm:mt-0 sm:ml-3">
+                        <Link href="/auth/team/create-account">
+                          <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                            Create Team Account
+                          </Button>
+                        </Link>
+                      </div>
+                      <div className="mt-3 sm:mt-0 sm:ml-3">
                         <Link href="/auth/customer/register">
                           <Button size="lg" variant="outline" className="w-full sm:w-auto">
                             Customer Sign Up
@@ -124,6 +139,8 @@ function App() {
         {/* Auth Routes */}
         <Route path="/auth/team/login" component={TeamLogin} />
         <Route path="/auth/team/register" component={TeamRegister} />
+        <Route path="/auth/team/create-account" component={TeamCreateAccount} />
+        <Route path="/auth/team/join" component={TeamJoinRequest} />
         <Route path="/auth/team/accept-invite" component={TeamAcceptInvite} />
         <Route path="/auth/customer/login" component={CustomerLogin} />
         <Route path="/auth/customer/register" component={CustomerRegister} />

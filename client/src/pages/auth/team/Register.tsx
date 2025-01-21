@@ -54,11 +54,29 @@ export default function TeamRegister() {
     try {
       setIsLoading(true);
 
-      // Create the organization first
-      const orgSlug = values.organizationName
+      // Sign up the user with Supabase Auth first
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+      });
+
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw new Error(`Authentication failed: ${authError.message}`);
+      }
+
+      if (!authData.user) {
+        throw new Error('No user data returned from authentication');
+      }
+
+      // Create the organization
+      const baseSlug = values.organizationName
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
+      
+      const randomSuffix = Math.random().toString(36).substring(2, 7);
+      const orgSlug = `${baseSlug}-${randomSuffix}`;
 
       const { data: organization, error: orgError } = await supabase
         .from('organizations')
@@ -73,47 +91,29 @@ export default function TeamRegister() {
         throw new Error(`Failed to create organization: ${orgError.message}`);
       }
 
-      // Sign up the user with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-        options: {
-          data: {
-            organization_id: organization.id,
-            role: 'admin', // First user is always an admin
-          },
-        },
-      });
-
-      if (authError) {
-        console.error('Auth error:', authError);
-        throw new Error(`Authentication failed: ${authError.message}`);
-      }
-
-      if (!authData.user) {
-        throw new Error('No user data returned from authentication');
-      }
-
-      // Create the user profile
+      // Update the existing profile with organization details
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert([
-          {
-            id: authData.user.id,
-            email: values.email,
-            role: 'admin',
-            organization_id: organization.id,
-          }
-        ]);
+        .update({
+          role: 'admin',
+          organization_id: organization.id,
+        })
+        .eq('id', authData.user.id);
 
       if (profileError) {
-        console.error('Profile creation error:', profileError);
-        throw new Error(`Failed to create profile: ${profileError.message}`);
+        // If profile update fails, clean up the organization
+        await supabase
+          .from('organizations')
+          .delete()
+          .eq('id', organization.id);
+        
+        console.error('Profile update error:', profileError);
+        throw new Error(`Failed to update profile: ${profileError.message}`);
       }
 
       toast({
         title: 'Registration successful!',
-        description: 'Please check your email to verify your account.',
+        description: 'Please check your email to verify your account. You can login after verification.',
       });
 
       setLocation('/auth/team/login');

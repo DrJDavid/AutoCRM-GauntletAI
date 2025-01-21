@@ -7,6 +7,7 @@ interface TicketState {
   selectedTicket: Ticket | null;
   filters: TicketFilters;
   isLoading: boolean;
+  error: Error | null;
   fetchTickets: () => Promise<void>;
   createTicket: (ticket: Partial<Ticket>) => Promise<void>;
   updateTicket: (id: string, updates: Partial<Ticket>) => Promise<void>;
@@ -20,6 +21,7 @@ export const useTicketStore = create<TicketState>((set, get) => ({
   selectedTicket: null,
   filters: {},
   isLoading: false,
+  error: null,
 
   setFilters: (filters) => set({ filters }),
   setSelectedTicket: (ticket) => set({ selectedTicket: ticket }),
@@ -46,40 +48,56 @@ export const useTicketStore = create<TicketState>((set, get) => ({
       const { data, error } = await query.order('createdAt', { ascending: false });
       if (error) throw error;
 
-      set({ tickets: data });
+      set({ tickets: data, error: null });
+    } catch (error) {
+      set({ error: error as Error });
     } finally {
       set({ isLoading: false });
     }
   },
 
   createTicket: async (ticket) => {
-    const { data, error } = await supabase
-      .from('tickets')
-      .insert([ticket])
-      .select()
-      .single();
+    set({ isLoading: true });
+    try {
+      const { data, error } = await supabase
+        .from('tickets')
+        .insert([ticket])
+        .select()
+        .single();
 
-    if (error) throw error;
-    
-    set((state) => ({
-      tickets: [data, ...state.tickets]
-    }));
+      if (error) throw error;
+      set((state) => ({ 
+        tickets: [data, ...state.tickets],
+        error: null 
+      }));
+    } catch (error) {
+      set({ error: error as Error });
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
   updateTicket: async (id, updates) => {
-    const { data, error } = await supabase
-      .from('tickets')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
+    set({ isLoading: true });
+    try {
+      const { data, error } = await supabase
+        .from('tickets')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
 
-    if (error) throw error;
-
-    set((state) => ({
-      tickets: state.tickets.map((t) => (t.id === id ? data : t)),
-      selectedTicket: state.selectedTicket?.id === id ? data : state.selectedTicket
-    }));
+      if (error) throw error;
+      set((state) => ({
+        tickets: state.tickets.map((t) => (t.id === id ? data : t)),
+        selectedTicket: state.selectedTicket?.id === id ? data : state.selectedTicket,
+        error: null
+      }));
+    } catch (error) {
+      set({ error: error as Error });
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
   deleteTicket: async (id) => {
