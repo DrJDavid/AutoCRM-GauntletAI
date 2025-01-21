@@ -91,6 +91,73 @@ create policy "Tickets can be updated by organization members"
     )
   );
 
+-- Additional RLS policies for admin role
+
+-- Organizations additional policies
+create policy "Admins can perform all actions on organizations"
+  on organizations for all using (
+    auth.uid() in (
+      select id from profiles where role = 'admin'
+      and organization_id = organizations.id
+    )
+  );
+
+-- Profiles additional policies
+create policy "Admins can manage all profiles in their organization"
+  on profiles for all using (
+    auth.uid() in (
+      select id from profiles where role = 'admin'
+      and organization_id = profiles.organization_id
+    )
+  );
+
+-- Tickets additional policies
+create policy "Agents can view and update assigned tickets"
+  on tickets for select using (
+    auth.uid() in (
+      select id from profiles 
+      where role = 'agent' 
+      and organization_id = tickets.organization_id
+    )
+  );
+
+create policy "Agents can update assigned tickets"
+  on tickets for update using (
+    auth.uid() in (
+      select id from profiles 
+      where role = 'agent' 
+      and organization_id = tickets.organization_id
+    )
+  );
+
+create policy "Admins can perform all actions on tickets"
+  on tickets for all using (
+    auth.uid() in (
+      select id from profiles 
+      where role = 'admin'
+      and organization_id = tickets.organization_id
+    )
+  );
+
+-- Delete policies
+create policy "Only admins can delete tickets"
+  on tickets for delete using (
+    auth.uid() in (
+      select id from profiles 
+      where role = 'admin'
+      and organization_id = tickets.organization_id
+    )
+  );
+
+create policy "Only admins can delete profiles"
+  on profiles for delete using (
+    auth.uid() in (
+      select id from profiles 
+      where role = 'admin'
+      and organization_id = profiles.organization_id
+    )
+  );
+
 -- Part 3: Functions, Triggers and Realtime
 -- Functions and triggers (after tables and policies are set up)
 create or replace function public.handle_new_user() 
