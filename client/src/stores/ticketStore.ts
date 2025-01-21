@@ -29,7 +29,23 @@ export const useTicketStore = create<TicketState>((set, get) => ({
   fetchTickets: async () => {
     set({ isLoading: true });
     try {
+      // First get the user's organization relationships
+      const { data: userOrgs, error: userOrgsError } = await supabase
+        .from('customer_organizations')
+        .select('organization_id')
+        .eq('customer_id', (await supabase.auth.getUser()).data.user?.id);
+
+      if (userOrgsError) throw userOrgsError;
+
+      // Get tickets for all organizations the user is part of
+      const orgIds = userOrgs?.map(org => org.organization_id) || [];
+      
       let query = supabase.from('tickets').select('*');
+      
+      if (orgIds.length > 0) {
+        query = query.in('organization_id', orgIds);
+      }
+
       const filters = get().filters;
 
       if (filters.status?.length) {
@@ -59,13 +75,30 @@ export const useTicketStore = create<TicketState>((set, get) => ({
   createTicket: async (ticket) => {
     set({ isLoading: true });
     try {
+      // Get user's organization
+      const { data: userOrgs, error: userOrgsError } = await supabase
+        .from('customer_organizations')
+        .select('organization_id')
+        .eq('customer_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (userOrgsError) throw userOrgsError;
+
+      if (!userOrgs?.organization_id) {
+        throw new Error('No organization found. Please contact support.');
+      }
+
       const { data, error } = await supabase
         .from('tickets')
-        .insert([ticket])
+        .insert([{
+          ...ticket,
+          organization_id: userOrgs.organization_id
+        }])
         .select()
         .single();
 
       if (error) throw error;
+      
       set((state) => ({ 
         tickets: [data, ...state.tickets],
         error: null 
@@ -101,16 +134,21 @@ export const useTicketStore = create<TicketState>((set, get) => ({
   },
 
   deleteTicket: async (id) => {
-    const { error } = await supabase
-      .from('tickets')
-      .delete()
-      .eq('id', id);
+    try {
+      const { error } = await supabase
+        .from('tickets')
+        .delete()
+        .eq('id', id);
 
-    if (error) throw error;
+      if (error) throw error;
 
-    set((state) => ({
-      tickets: state.tickets.filter((t) => t.id !== id),
-      selectedTicket: state.selectedTicket?.id === id ? null : state.selectedTicket
-    }));
+      set((state) => ({
+        tickets: state.tickets.filter((t) => t.id !== id),
+        selectedTicket: state.selectedTicket?.id === id ? null : state.selectedTicket,
+        error: null
+      }));
+    } catch (error) {
+      set({ error: error as Error });
+    }
   }
 }));
