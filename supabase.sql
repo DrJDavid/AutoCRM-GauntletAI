@@ -835,3 +835,28 @@ create trigger on_customer_invite_created
   after insert on customer_organization_invites
   for each row
   execute function notify_customer_invite();
+
+-- Create customer_organizations table
+create table if not exists public.customer_organizations (
+    id uuid default gen_random_uuid() primary key,
+    customer_id uuid references public.profiles not null,
+    organization_id uuid references public.organizations not null,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    status text not null default 'active' check (status in ('active', 'inactive')),
+    unique(customer_id, organization_id)
+);
+
+alter table public.customer_organizations enable row level security;
+
+create policy "Customers can view their own organizations"
+  on customer_organizations for select using (
+    auth.uid() = customer_id
+  );
+
+create policy "Organization members can view customer relationships"
+  on customer_organizations for select using (
+    auth.uid() in (
+      select profiles.id from profiles 
+      where profiles.organization_id = customer_organizations.organization_id
+    )
+  );

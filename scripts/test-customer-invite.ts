@@ -32,35 +32,57 @@ async function testCustomerInviteFlow() {
       console.log('✅ Using existing organization:', org.name);
     }
 
-    // 2. Create test admin if doesn't exist
-    const { data: admin, error: adminError } = await supabase.auth.signUp({
-      email: 'admin@autocrm-test.com',
-      password: 'test123456',
-      options: {
-        data: {
-          role: 'admin'
-        }
-      }
-    });
-
-    if (adminError) throw adminError;
-    console.log('✅ Test admin created');
-
-    // 3. Associate admin with organization
-    const { error: profileError } = await supabase
+    // 2. Check if admin exists and sign in
+    const { data: adminData, error: adminCheckError } = await supabase
       .from('profiles')
-      .update({ organization_id: org.id })
-      .eq('id', admin.user!.id);
+      .select()
+      .eq('email', 'admin.test@gmail.com')
+      .single();
 
-    if (profileError) throw profileError;
-    console.log('✅ Admin associated with organization');
+    if (!adminCheckError) {
+      // Admin exists, try to sign in
+      const { data: admin, error: signInError } = await supabase.auth.signInWithPassword({
+        email: 'admin.test@gmail.com',
+        password: 'test123456'
+      });
+
+      if (signInError) throw signInError;
+      console.log('✅ Signed in as existing admin');
+
+      // 3. Ensure admin is associated with organization
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ organization_id: org.id })
+        .eq('id', admin.user.id);
+
+      if (profileError) throw profileError;
+      console.log('✅ Admin associated with organization');
+    } else {
+      // Admin doesn't exist, create one
+      console.log('Creating new admin account...');
+      const { data: admin, error: signUpError } = await supabase.auth.signUp({
+        email: 'admin.test@gmail.com',
+        password: 'test123456',
+        options: {
+          data: {
+            role: 'admin'
+          }
+        }
+      });
+
+      if (signUpError) throw signUpError;
+      throw new Error('Please verify the admin email and run the test again');
+    }
+
+    // Add delay before next operation
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // 4. Create customer invite
     const { data: invite, error: inviteError } = await supabase.rpc(
       'create_customer_invite',
       {
         org_id: org.id,
-        customer_email: 'customer@autocrm-test.com'
+        customer_email: 'customer.test@gmail.com'
       }
     );
 
@@ -70,7 +92,7 @@ async function testCustomerInviteFlow() {
 
     // 5. Create test customer account
     const { data: customer, error: customerError } = await supabase.auth.signUp({
-      email: 'customer@autocrm-test.com',
+      email: 'customer.test@gmail.com',
       password: 'test123456',
       options: {
         data: {
