@@ -8,7 +8,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -23,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { useUserStore } from '@/stores/userStore';
+import { Link } from 'wouter';
 
 const loginSchema = z.object({
   organizationSlug: z.string().min(2, 'Organization ID is required'),
@@ -80,12 +80,12 @@ export default function OrganizationLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-lg">
         <CardHeader>
-          <CardTitle>Sign In to Organization</CardTitle>
+          <CardTitle>Organization Login</CardTitle>
           <CardDescription>
-            Enter your organization ID and credentials to access your account
+            Sign in to access your organization's dashboard
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -99,7 +99,7 @@ export default function OrganizationLogin() {
                     <FormLabel>Organization ID</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="acme-inc"
+                        placeholder="your-org-name"
                         {...field}
                         onChange={(e) => {
                           const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-');
@@ -121,7 +121,7 @@ export default function OrganizationLogin() {
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="Enter your email"
+                        placeholder="you@example.com"
                         {...field}
                       />
                     </FormControl>
@@ -157,28 +157,14 @@ export default function OrganizationLogin() {
               </Button>
             </form>
           </Form>
+
+          <div className="mt-4 text-center text-sm text-gray-500">
+            Don't have an organization yet?{' '}
+            <Link href="/org/new">
+              <a className="text-blue-600 hover:underline">Create one</a>
+            </Link>
+          </div>
         </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-          <div className="text-sm text-center">
-            <Button
-              variant="link"
-              className="text-primary hover:underline"
-              onClick={() => setLocation('/auth/reset-password')}
-            >
-              Forgot your password?
-            </Button>
-          </div>
-          <div className="text-sm text-center">
-            Need to create an organization?{' '}
-            <Button
-              variant="link"
-              className="text-primary hover:underline"
-              onClick={() => setLocation('/org/new')}
-            >
-              Create Organization
-            </Button>
-          </div>
-        </CardFooter>
       </Card>
     </div>
   );

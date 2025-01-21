@@ -11,6 +11,8 @@ import { Footer } from '@/components/layout/Footer';
 import { PortalLayout } from '@/components/layout/PortalLayout';
 
 // Auth Pages
+import Login from '@/pages/auth/Login';
+import Register from '@/pages/auth/Register';
 import TeamLogin from '@/pages/auth/team/Login';
 import TeamRegister from '@/pages/auth/team/Register';
 import TeamAcceptInvite from '@/pages/auth/team/AcceptInvite';
@@ -18,6 +20,8 @@ import TeamJoinRequest from '@/pages/auth/team/TeamJoinRequest';
 import TeamCreateAccount from '@/pages/auth/team/CreateAccount';
 import CustomerLogin from '@/pages/auth/customer/Login';
 import CustomerRegister from '@/pages/auth/customer/Register';
+import AgentLogin from '@/pages/auth/agent/Login';
+import AgentRegister from '@/pages/auth/agent/Register';
 import ResetPassword from '@/pages/auth/ResetPassword';
 import CustomerAcceptInvite from '@/pages/auth/customer/AcceptInvite';
 
@@ -47,29 +51,19 @@ import Support from '@/pages/portal/support';
 import CustomerInvite from '@/pages/org/CustomerInvite';
 import AgentInvite from '@/pages/org/AgentInvite';
 
-function ProtectedRoute({ 
-  children, 
-  allowedRoles 
-}: { 
-  children: React.ReactNode;
-  allowedRoles: UserRole[];
-}) {
-  const { currentUser, isAuthenticated, isLoading } = useUserStore();
+// Admin Pages
+import AdminTickets from '@/pages/admin/tickets';
+import AdminAnalytics from '@/pages/admin/analytics';
+import AdminSettings from '@/pages/admin/settings';
+import UserManagement from '@/pages/admin/users';
+import InviteCustomers from '@/pages/admin/invite-customers';
+import ManageAgents from '@/pages/admin/manage-agents';
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+// Layouts
+import AdminLayout from '@/components/layout/AdminLayout';
 
-  if (!isAuthenticated) {
-    return <Link href="/auth/team/login" />;
-  }
-
-  if (!currentUser || !allowedRoles.includes(currentUser.role)) {
-    return <Link href="/unauthorized" />;
-  }
-
-  return <>{children}</>;
-}
+// Protected route wrapper
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 function AgentLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -106,7 +100,13 @@ function App() {
       <Switch>
         {/* Public Routes */}
         <Route path="/" component={Landing} />
-        
+        <Route path="/login" component={Login} />
+        <Route path="/register" component={Register} />
+        <Route path="/auth/agent/login" component={AgentLogin} />
+        <Route path="/auth/agent/register" component={AgentRegister} />
+        <Route path="/auth/customer/login" component={CustomerLogin} />
+        <Route path="/auth/customer/register" component={CustomerRegister} />
+
         {/* Organization Routes */}
         <Route path="/org/new" component={OrganizationNew} />
         <Route path="/org/login" component={OrganizationLogin} />
@@ -119,6 +119,7 @@ function App() {
         {/* Customer Routes */}
         <Route path="/auth/customer/accept-invite" component={CustomerAcceptInvite} />
         <Route path="/auth/customer/login" component={CustomerLogin} />
+        <Route path="/auth/customer/register" component={CustomerRegister} />
         <Route path="/auth/reset-password" component={ResetPassword} />
 
         {/* Customer Portal */}
@@ -143,23 +144,56 @@ function App() {
           </ProtectedRoute>
         )} />
 
-        {/* Protected Admin Routes */}
-        <Route path="/admin/dashboard" component={() => (
+        {/* Admin Routes */}
+        <Route path="/admin/dashboard">
           <ProtectedRoute allowedRoles={['admin']}>
-            <AgentLayout>
+            <AdminLayout>
               <AdminDashboard />
-            </AgentLayout>
+            </AdminLayout>
           </ProtectedRoute>
-        )} />
-
-        {/* Protected Agent Routes */}
-        <Route path="/agent/dashboard" component={() => (
-          <ProtectedRoute allowedRoles={['agent']}>
-            <AgentLayout>
-              <AgentDashboard />
-            </AgentLayout>
+        </Route>
+        <Route path="/admin/tickets">
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminLayout>
+              <AdminTickets />
+            </AdminLayout>
           </ProtectedRoute>
-        )} />
+        </Route>
+        <Route path="/admin/analytics">
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminLayout>
+              <AdminAnalytics />
+            </AdminLayout>
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/settings">
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminLayout>
+              <AdminSettings />
+            </AdminLayout>
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/users">
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminLayout>
+              <UserManagement />
+            </AdminLayout>
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/invite-customers">
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminLayout>
+              <InviteCustomers />
+            </AdminLayout>
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/manage-agents">
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminLayout>
+              <ManageAgents />
+            </AdminLayout>
+          </ProtectedRoute>
+        </Route>
 
         {/* Protected Customer Routes */}
         <Route path="/portal/tickets/:id" component={() => (
@@ -169,12 +203,6 @@ function App() {
             </PortalLayout>
           </ProtectedRoute>
         )} />
-
-        {/* Customer Auth Routes */}
-        <Route path="/auth/customer/accept-invite" component={CustomerAcceptInvite} />
-        
-        {/* Agent Auth Routes */}
-        <Route path="/auth/agent/accept-invite" component={lazy(() => import('@/pages/auth/agent/AcceptInvite'))} />
 
         {/* Fallback Routes */}
         <Route path="/unauthorized" component={() => (

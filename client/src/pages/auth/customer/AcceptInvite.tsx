@@ -127,25 +127,13 @@ export default function AcceptInvite() {
         email: inviteData.email,
         password: values.password,
         options: {
-          emailRedirectTo: 'http://localhost:5000/auth/customer/login',
           data: {
             role: 'customer',
           },
         },
       });
 
-      if (authError) {
-        console.error('Auth error details:', {
-          message: authError.message,
-          status: authError.status,
-          name: authError.name,
-          stack: authError.stack,
-        });
-        throw authError;
-      }
-
-      // Add a delay before accepting invite to avoid rate limits
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (authError) throw authError;
 
       // Accept the invite
       const { error: acceptError } = await supabase.rpc(
@@ -153,41 +141,19 @@ export default function AcceptInvite() {
         { invite_token: inviteData.token }
       );
 
-      if (acceptError) {
-        console.error('Accept invite error:', acceptError);
-        throw acceptError;
-      }
+      if (acceptError) throw acceptError;
 
       toast({
         title: 'Account created!',
-        description: 'Please check your email to verify your account. You will be redirected to the login page.',
+        description: 'Please check your email to verify your account.',
       });
 
-      // Add a delay before redirect to ensure user sees the message
-      await new Promise(resolve => setTimeout(resolve, 2000));
       setLocation('/auth/customer/login');
-    } catch (error: any) {
-      console.error('Full error details:', {
-        error,
-        message: error.message,
-        status: error.status,
-        name: error.name,
-      });
-      
-      let errorMessage = 'Failed to create account';
-      
-      if (error.status === 429) {
-        errorMessage = 'Too many attempts. Please try again in a few minutes.';
-      } else if (error.status === 406) {
-        errorMessage = 'Invalid email or password format.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
+    } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: errorMessage,
+        description: error instanceof Error ? error.message : 'Failed to create account',
       });
     } finally {
       setIsLoading(false);

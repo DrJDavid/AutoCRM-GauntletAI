@@ -48,7 +48,7 @@ interface InviteWithOrg {
   email: string;
 }
 
-export default function CustomerRegister() {
+export default function AgentRegister() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -70,7 +70,7 @@ export default function CustomerRegister() {
       console.log('Checking for invite with email:', values.email);
       
       const { data: invites, error: inviteError } = await supabaseAdmin
-        .from('customer_organization_invites')
+        .from('agent_organization_invites')
         .select(`
           *,
           organizations (
@@ -87,58 +87,11 @@ export default function CustomerRegister() {
       if (inviteError) throw inviteError;
 
       if (!invites || invites.length === 0) {
-        // If no invite exists, proceed with normal registration
-        console.log('No invite found, proceeding with normal registration');
-        
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email: values.email,
-          password: values.password,
-          email_confirm: true,
-          user_metadata: {
-            role: 'customer'
-          }
-        });
-
-        console.log('Auth response:', { authData, error: authError });
-
-        if (authError) {
-          console.error('Auth error:', authError);
-          throw authError;
-        }
-
-        if (!authData.user) {
-          throw new Error('No user data returned from user creation');
-        }
-
-        // Create the user profile
-        console.log('Creating profile for user:', authData.user.id);
-        
-        const { error: profileError } = await supabaseAdmin
-          .from('profiles')
-          .insert([
-            {
-              id: authData.user.id,
-              email: values.email,
-              role: 'customer',
-              created_at: new Date().toISOString(),
-              full_name: '',  // Empty string for now, can be updated later
-              avatar_url: null  // Null for now, can be updated later
-            }
-          ])
-          .select()
-          .single();
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          throw profileError;
-        }
-
         toast({
-          title: 'Registration successful!',
-          description: 'Your account has been created.',
+          variant: 'destructive',
+          title: 'No invitation found',
+          description: 'You need an invitation to register as an agent. Please contact your organization administrator.',
         });
-        
-        setLocation('/auth/customer/login');
         return;
       }
 
@@ -178,7 +131,7 @@ export default function CustomerRegister() {
         // Create new user account using admin API
         console.log('Creating new user account with data:', {
           email: values.email,
-          role: 'customer',
+          role: 'agent',
           organization_id: organization.id,
           organization_slug: organization.slug,
         });
@@ -186,9 +139,9 @@ export default function CustomerRegister() {
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email: values.email,
           password: values.password,
-          email_confirm: true,
+          email_confirm: true, // Auto-confirm the email
           user_metadata: {
-            role: 'customer',
+            role: 'agent',
             organization_id: organization.id,
             organization_slug: organization.slug,
           }
@@ -217,7 +170,7 @@ export default function CustomerRegister() {
           {
             id: userId,
             email: values.email,
-            role: 'customer',
+            role: 'agent',
             organization_id: organization.id,
             created_at: new Date().toISOString(),
             full_name: '',  // Empty string for now, can be updated later
@@ -244,7 +197,7 @@ export default function CustomerRegister() {
             id: crypto.randomUUID(), // Generate a new UUID for the member record
             user_id: userId,
             organization_id: organization.id,
-            role: 'customer',
+            role: 'agent',
             // created_at and updated_at are optional, let the database handle them
           }
         ], {
@@ -260,7 +213,7 @@ export default function CustomerRegister() {
       console.log('Marking invite as accepted');
 
       const { error: acceptError } = await supabaseAdmin
-        .from('customer_organization_invites')
+        .from('agent_organization_invites')
         .update({ accepted: true })
         .eq('token', inviteData.token);
 
@@ -273,10 +226,10 @@ export default function CustomerRegister() {
         title: 'Registration successful!',
         description: existingUser 
           ? 'Your account has been linked to the organization.' 
-          : 'Your account has been created.',
+          : 'Please check your email to verify your account.',
       });
       
-      setLocation('/auth/customer/login');
+      setLocation('/auth/team/login');
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -294,9 +247,9 @@ export default function CustomerRegister() {
       <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
+            <CardTitle className="text-2xl font-bold">Create an agent account</CardTitle>
             <CardDescription>
-              Enter your email below to create your customer account
+              Enter your email below to create your agent account
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -365,7 +318,7 @@ export default function CustomerRegister() {
           </CardContent>
           <CardFooter className="text-sm text-center">
             Already have an account?{' '}
-            <Link href="/auth/customer/login" className="text-primary hover:underline">
+            <Link href="/auth/agent/login" className="text-primary hover:underline">
               Login
             </Link>
           </CardFooter>
@@ -373,4 +326,4 @@ export default function CustomerRegister() {
       </div>
     </div>
   );
-}
+} 

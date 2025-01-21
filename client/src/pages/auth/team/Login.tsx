@@ -158,13 +158,13 @@ export default function TeamLogin() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <div className="text-sm text-center">
-            <Link href="/auth/team/reset-password" className="text-primary hover:underline">
+            <Link href="/auth/reset-password" className="text-primary hover:underline">
               Forgot your password?
             </Link>
           </div>
           <div className="text-sm text-center">
-            Need to create an organization?{' '}
-            <Link href="/auth/team/register" className="text-primary hover:underline">
+            Need to create an account?{' '}
+            <Link href="/auth/agent/register" className="text-primary hover:underline">
               Register here
             </Link>
           </div>

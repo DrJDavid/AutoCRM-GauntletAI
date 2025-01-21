@@ -23,16 +23,19 @@ interface UserState {
   currentUser: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  error: Error | null;
   login: (credentials: AuthCredentials) => Promise<void>;
   signUp: (email: string, password: string, role: string, organizationId?: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 export const useUserStore = create<UserState>((set) => ({
   currentUser: null,
   isAuthenticated: false,
   isLoading: true,
+  error: null,
 
   checkAuth: async () => {
     try {
@@ -143,6 +146,16 @@ export const useUserStore = create<UserState>((set) => ({
         },
         isAuthenticated: true
       });
+    }
+  },
+
+  signOut: async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      set({ currentUser: null, error: null });
+    } catch (error) {
+      set({ error: error as Error });
     }
   }
 }));
