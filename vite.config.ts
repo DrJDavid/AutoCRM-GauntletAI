@@ -10,13 +10,14 @@ export default defineConfig({
     runtimeErrorOverlay(),
     themePlugin(),
   ],
+  root: "client",
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "client/src"),
     },
   },
   build: {
-    outDir: "dist/public",
+    outDir: "../dist/public",
     emptyOutDir: true,
     sourcemap: true,
   },
