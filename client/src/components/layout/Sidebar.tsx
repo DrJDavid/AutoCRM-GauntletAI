@@ -10,7 +10,8 @@ import {
   List,
   InboxIcon,
   FileText,
-  BarChart
+  BarChart,
+  UserPlus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -95,6 +96,12 @@ const navigation: NavigationItem[] = [
     href: '/admin/tickets/analytics', 
     icon: BarChart,
     roles: ['admin']
+  },
+  { 
+    name: 'Invite Customers', 
+    href: '/org/customers/invite', 
+    icon: UserPlus,
+    roles: ['admin', 'agent']
   },
   { 
     name: 'User Management', 

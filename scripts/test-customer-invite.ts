@@ -33,35 +33,31 @@ async function testCustomerInviteFlow() {
     }
 
     // 2. Check if admin exists and sign in
+    console.log('Checking for existing admin account...');
     const { data: adminData, error: adminCheckError } = await supabase
       .from('profiles')
       .select()
-      .eq('email', 'admin.test@gmail.com')
+      .eq('email', 'admin.test@example.com')
       .single();
 
-    if (!adminCheckError) {
-      // Admin exists, try to sign in
-      const { data: admin, error: signInError } = await supabase.auth.signInWithPassword({
-        email: 'admin.test@gmail.com',
+    let admin;
+    if (!adminCheckError && adminData) {
+      console.log('Found existing admin account, attempting to sign in...');
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: 'admin.test@example.com',
         password: 'test123456'
       });
 
-      if (signInError) throw signInError;
+      if (signInError) {
+        console.error('Failed to sign in:', signInError);
+        throw signInError;
+      }
+      admin = signInData;
       console.log('✅ Signed in as existing admin');
-
-      // 3. Ensure admin is associated with organization
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ organization_id: org.id })
-        .eq('id', admin.user.id);
-
-      if (profileError) throw profileError;
-      console.log('✅ Admin associated with organization');
     } else {
-      // Admin doesn't exist, create one
-      console.log('Creating new admin account...');
-      const { data: admin, error: signUpError } = await supabase.auth.signUp({
-        email: 'admin.test@gmail.com',
+      console.log('No existing admin found, creating new account...');
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: 'admin.test@example.com',
         password: 'test123456',
         options: {
           data: {
@@ -70,19 +66,39 @@ async function testCustomerInviteFlow() {
         }
       });
 
-      if (signUpError) throw signUpError;
-      throw new Error('Please verify the admin email and run the test again');
+      if (signUpError) {
+        if (signUpError.status === 429) {
+          console.log('Hit rate limit. Please wait a few minutes and try again.');
+        }
+        throw signUpError;
+      }
+      admin = signUpData;
+      console.log('✅ Created new admin account - please check your email for verification');
+      process.exit(0);
     }
+
+    // 3. Ensure admin is associated with organization and has correct role
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ 
+        organization_id: org.id,
+        role: 'admin'
+      })
+      .eq('id', admin.user.id);
+
+    if (profileError) throw profileError;
+    console.log('✅ Admin role and organization set');
 
     // Add delay before next operation
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // 4. Create customer invite
+    const customerEmail = 'customer.test@example.com';
     const { data: invite, error: inviteError } = await supabase.rpc(
       'create_customer_invite',
       {
         org_id: org.id,
-        customer_email: 'customer.test@gmail.com'
+        customer_email: customerEmail
       }
     );
 
@@ -90,19 +106,15 @@ async function testCustomerInviteFlow() {
     console.log('✅ Customer invite created');
     console.log('🔗 Invite link:', `/auth/customer/accept-invite?token=${invite}`);
 
-    // 5. Create test customer account
-    const { data: customer, error: customerError } = await supabase.auth.signUp({
-      email: 'customer.test@gmail.com',
-      password: 'test123456',
-      options: {
-        data: {
-          role: 'customer'
-        }
-      }
+    // 5. Sign in as customer
+    console.log('Signing in as customer...');
+    const { data: customer, error: signInError } = await supabase.auth.signInWithPassword({
+      email: customerEmail,
+      password: 'test123456'
     });
 
-    if (customerError) throw customerError;
-    console.log('✅ Test customer account created');
+    if (signInError) throw signInError;
+    console.log('✅ Signed in as customer');
 
     // 6. Accept invite
     const { error: acceptError } = await supabase.rpc(

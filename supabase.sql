@@ -797,38 +797,32 @@ returns trigger as $$
 declare
   org_name text;
 begin
-  -- Get organization name
-  select name into org_name
-  from organizations
-  where id = NEW.organization_id;
+  -- Get the organization name
+  SELECT name INTO org_name
+  FROM organizations
+  WHERE id = NEW.organization_id;
 
-  -- Send email using Supabase's built-in email service
-  perform net.http_post(
-    url := 'https://lhrslwpgyghhbfedytzv.supabase.co/rest/v1/rpc/send_email',
+  -- Send the invite email using Supabase's built-in email service
+  PERFORM net.http_post(
+    url := 'https://api.supabase.com/v1/invite-email',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || current_setting('request.jwt.claim.role')
+      'Authorization', current_setting('request.headers')::json->>'authorization'
     ),
     body := jsonb_build_object(
       'to', NEW.email,
       'subject', 'Invitation to join ' || org_name || ' on AutoCRM',
-      'html_content', format(
-        '<h1>You''ve been invited!</h1>
-        <p>You''ve been invited to join %s on AutoCRM.</p>
-        <p>Click the link below to accept the invitation:</p>
-        <a href="%s/auth/accept-invite?token=%s">Accept Invitation</a>
-        <p>This invite expires on %s</p>',
-        org_name,
-        current_setting('app.settings.public_url'),
-        NEW.token,
-        NEW.expires_at::text
-      )
+      'content', 'You have been invited to join ' || org_name || ' on AutoCRM. Click the link below to accept the invitation:
+
+' || 'https://auto-crm-gauntlet-ai.vercel.app/invite/accept?token=' || NEW.token::text || '
+
+This invite will expire in 24 hours.'
     )
   );
-  
-  return NEW;
+
+  RETURN NEW;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql SECURITY DEFINER;
 
 -- Create the trigger
 create trigger on_customer_invite_created

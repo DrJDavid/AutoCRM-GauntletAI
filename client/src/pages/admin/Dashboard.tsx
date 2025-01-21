@@ -10,7 +10,9 @@ import {
   AlertCircle,
   ArrowUpRight,
   ArrowDownRight,
-  Loader2
+  Loader2,
+  UserPlus,
+  BarChart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -147,22 +149,22 @@ export default function AdminDashboard() {
       <div className="mt-6">
         <h3 className="text-lg font-medium mb-4">Quick Actions</h3>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Link href="/org/invite">
+          <Link href="/org/customers/invite">
             <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
-              <Users className="h-6 w-6" />
-              <span>Manage Team</span>
+              <UserPlus className="h-6 w-6" />
+              <span>Invite Customers</span>
             </Button>
           </Link>
-          <Link href="/agent/tickets">
+          <Link href="/admin/tickets/all">
             <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
               <TicketCheck className="h-6 w-6" />
               <span>View All Tickets</span>
             </Button>
           </Link>
-          <Link href="/agent/tickets?priority=urgent">
+          <Link href="/admin/tickets/analytics">
             <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
-              <AlertCircle className="h-6 w-6" />
-              <span>Handle Urgent Tickets</span>
+              <BarChart className="h-6 w-6" />
+              <span>View Analytics</span>
             </Button>
           </Link>
         </div>
