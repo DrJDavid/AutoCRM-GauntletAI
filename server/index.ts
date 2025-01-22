@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import authRoutes from './routes/auth';
 
 // Check required environment variables
 const requiredEnvVars = [
@@ -107,3 +108,6 @@ app.use((req, res, next) => {
     process.exit(1);
   }
 })();
+
+// API routes
+app.use('/api/auth', authRoutes);

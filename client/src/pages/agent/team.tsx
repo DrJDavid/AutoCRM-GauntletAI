@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
-import { supabase, supabaseAdmin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -51,150 +51,115 @@ interface TeamMember extends Profile {
 
 const inviteSchema = z.object({
   email: z.string().email('Invalid email address'),
-  role: z.enum(['agent', 'customer'], {
-    required_error: 'Please select a role',
-  }),
 });
 
 export default function TeamManagement() {
-  const [, setLocation] = useLocation();
-  const { toast } = useToast();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [organization, setOrganization] = useState<Organization | null>(null);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const form = useForm<z.infer<typeof inviteSchema>>({
     resolver: zodResolver(inviteSchema),
     defaultValues: {
       email: '',
-      role: 'agent',
     },
   });
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) {
-          setLocation('/auth/agent/login');
-          return;
-        }
-
-        // Get profile with organization
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select(`
-            *,
-            organizations (
-              id,
-              name,
-              slug
-            )
-          `)
-          .eq('id', user.id)
-          .single();
-
-        if (profileError) throw profileError;
-
-        if (!profile) {
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Profile not found',
-          });
-          return;
-        }
-
-        // Only allow admins to access this page
-        if (profile.role !== 'admin') {
-          toast({
-            variant: 'destructive',
-            title: 'Access Denied',
-            description: 'Only administrators can manage team members',
-          });
-          setLocation('/agent/dashboard');
-          return;
-        }
-
-        setProfile(profile);
-        setOrganization(profile.organizations);
-
-        // Load team members
-        const { data: members, error: membersError } = await supabase
-          .from('organization_members')
-          .select(`
-            profiles (
-              id,
-              email,
-              full_name,
-              role,
-              organization_id
-            ),
-            organizations (
-              id,
-              name,
-              slug
-            )
-          `)
-          .eq('organization_id', profile.organization_id);
-
-        if (membersError) throw membersError;
-
-        setTeamMembers(members?.map(m => ({
-          ...m.profiles,
-          organizations: m.organizations
-        })) || []);
-      } catch (error) {
-        console.error('Error loading data:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to load team data',
-        });
-      } finally {
-        setLoading(false);
-      }
-    }
-
     loadData();
-  }, [setLocation, toast]);
+  }, []);
+
+  async function loadData() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/login');
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.organization_id) {
+        toast({
+          title: 'Error',
+          description: 'No organization found',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const response = await fetch(`/api/auth/team/${profile.organization_id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch team members');
+      }
+      const data = await response.json();
+      setTeamMembers(data);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load team members',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const onSubmit = async (values: z.infer<typeof inviteSchema>) => {
     try {
-      if (!organization) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/login');
+        return;
+      }
 
-      const inviteTable = values.role === 'agent' 
-        ? 'agent_organization_invites'
-        : 'customer_organization_invites';
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
 
-      // Create invite
-      const { error: inviteError } = await supabaseAdmin
-        .from(inviteTable)
-        .insert([
-          {
-            email: values.email,
-            organization_id: organization.id,
-          }
-        ]);
+      if (!profile?.organization_id) {
+        toast({
+          title: 'Error',
+          description: 'No organization found',
+          variant: 'destructive',
+        });
+        return;
+      }
 
-      if (inviteError) throw inviteError;
-
-      toast({
-        title: 'Invite sent',
-        description: `Invitation sent to ${values.email}`,
+      const response = await fetch('/api/auth/invite/agent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: values.email,
+          organizationId: profile.organization_id,
+        }),
       });
 
-      setInviteDialogOpen(false);
-      form.reset();
-    } catch (error) {
-      console.error('Error sending invite:', error);
+      if (!response.ok) {
+        throw new Error('Failed to send invitation');
+      }
+
       toast({
-        variant: 'destructive',
+        title: 'Success',
+        description: 'Invitation sent successfully',
+      });
+      
+      form.reset();
+      loadData();
+    } catch (error) {
+      toast({
         title: 'Error',
-        description: 'Failed to send invite',
+        description: 'Failed to send invitation',
+        variant: 'destructive',
       });
     }
   };
@@ -203,18 +168,14 @@ export default function TeamManagement() {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
-  if (!profile || !organization) {
-    return <div className="flex items-center justify-center min-h-screen">No profile found</div>;
-  }
-
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">Team Management</h1>
-          <p className="text-gray-600">{organization.name}</p>
+          <p className="text-gray-600">{teamMembers[0]?.organizations.name || 'No organization found'}</p>
         </div>
-        <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+        <Dialog>
           <DialogTrigger asChild>
             <Button>Invite Member</Button>
           </DialogTrigger>
@@ -235,25 +196,6 @@ export default function TeamManagement() {
                       <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input placeholder="Enter email address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Role</FormLabel>
-                      <FormControl>
-                        <select
-                          className="w-full p-2 border rounded"
-                          {...field}
-                        >
-                          <option value="agent">Agent</option>
-                          <option value="customer">Customer</option>
-                        </select>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

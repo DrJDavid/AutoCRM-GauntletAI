@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useToast } from '@/hooks/use-toast';
+import * as z from 'zod';
+import { useToast } from '@/components/ui/use-toast';
 import { useUserStore } from '@/stores/userStore';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { Button } from '@/components/ui/button';
@@ -26,26 +26,26 @@ import {
 import { Input } from '@/components/ui/input';
 import { Link } from 'wouter';
 
-const customerLoginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+const loginSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 export default function CustomerLogin() {
   const [, setLocation] = useLocation();
-  const { login } = useUserStore();
+  const { login, currentUser } = useUserStore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof customerLoginSchema>>({
-    resolver: zodResolver(customerLoginSchema),
+  const form = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
       password: '',
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof customerLoginSchema>) => {
+  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
       setIsLoading(true);
       await login({
@@ -58,7 +58,9 @@ export default function CustomerLogin() {
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
       });
-      setLocation('/portal/dashboard');
+
+      // Redirect to customer portal
+      setLocation('/portal');
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -71,16 +73,29 @@ export default function CustomerLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <AuthHeader />
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Customer Login</CardTitle>
-          <CardDescription>
-            Enter your email and password to access your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="container relative h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
+      <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
+        <div className="absolute inset-0 bg-zinc-900" />
+        <div className="relative z-20 flex items-center text-lg font-medium">
+          <AuthHeader />
+        </div>
+        <div className="relative z-20 mt-auto">
+          <blockquote className="space-y-2">
+            <p className="text-lg">
+              Access your support portal to get help and track your requests.
+            </p>
+          </blockquote>
+        </div>
+      </div>
+      <div className="lg:p-8">
+        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+          <div className="flex flex-col space-y-2 text-center">
+            <h1 className="text-2xl font-semibold tracking-tight">Customer Login</h1>
+            <p className="text-sm text-muted-foreground">
+              Sign in to access your support portal
+            </p>
+          </div>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -91,8 +106,8 @@ export default function CustomerLogin() {
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter your email"
                         type="email"
+                        placeholder="you@example.com"
                         {...field}
                       />
                     </FormControl>
@@ -100,6 +115,7 @@ export default function CustomerLogin() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="password"
@@ -108,8 +124,8 @@ export default function CustomerLogin() {
                     <FormLabel>Password</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter your password"
                         type="password"
+                        placeholder="••••••••"
                         {...field}
                       />
                     </FormControl>
@@ -117,30 +133,32 @@ export default function CustomerLogin() {
                   </FormItem>
                 )}
               />
+
               <Button
                 type="submit"
                 className="w-full"
                 disabled={isLoading}
               >
-                {isLoading ? 'Logging in...' : 'Login'}
+                {isLoading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
           </Form>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-          <div className="text-sm text-center">
-            <Link href="/auth/customer/reset-password" className="text-primary hover:underline">
-              Forgot your password?
-            </Link>
+
+          <div className="space-y-2">
+            <p className="px-8 text-center text-sm text-muted-foreground">
+              <Link href="/auth/customer/reset-password" className="underline underline-offset-4 hover:text-primary">
+                Forgot your password?
+              </Link>
+            </p>
+            <p className="px-8 text-center text-sm text-muted-foreground">
+              Don't have an account?{' '}
+              <Link href="/auth/customer/register" className="underline underline-offset-4 hover:text-primary">
+                Sign up
+              </Link>
+            </p>
           </div>
-          <div className="text-sm text-center">
-            Don't have an account?{' '}
-            <Link href="/auth/customer/register" className="text-primary hover:underline">
-              Sign up
-            </Link>
-          </div>
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

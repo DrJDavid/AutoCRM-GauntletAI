@@ -4,7 +4,9 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "tsx server/index.ts",
+    "dev:server": "tsx server/index.ts",
+    "dev:client": "vite",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "build": "vite build",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
@@ -88,6 +90,7 @@
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
     "drizzle-kit": "^0.27.1",
     "esbuild": "^0.24.0",
     "postcss": "^8.4.47",

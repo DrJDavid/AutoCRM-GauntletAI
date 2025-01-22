@@ -100,12 +100,10 @@ function App() {
       <Switch>
         {/* Public Routes */}
         <Route path="/" component={Landing} />
-        <Route path="/login" component={Login} />
-        <Route path="/register" component={Register} />
-        <Route path="/auth/agent/login" component={AgentLogin} />
-        <Route path="/auth/agent/register" component={AgentRegister} />
-        <Route path="/auth/customer/login" component={CustomerLogin} />
-        <Route path="/auth/customer/register" component={CustomerRegister} />
+
+        {/* Auth Routes */}
+        <Route path="/auth/reset-password" component={ResetPassword} />
+        <Route path="/auth/reset-password/confirm" component={ResetPassword} />
 
         {/* Organization Routes */}
         <Route path="/org/new" component={OrganizationNew} />
@@ -120,29 +118,46 @@ function App() {
         <Route path="/auth/customer/accept-invite" component={CustomerAcceptInvite} />
         <Route path="/auth/customer/login" component={CustomerLogin} />
         <Route path="/auth/customer/register" component={CustomerRegister} />
-        <Route path="/auth/reset-password" component={ResetPassword} />
 
-        {/* Customer Portal */}
-        <Route path="/portal" component={CustomerPortal} />
-        <Route path="/portal/kb" component={KnowledgeBase} />
-        <Route path="/portal/support" component={Support} />
+        {/* Customer Portal - Protected */}
+        <Route path="/portal">
+          <ProtectedRoute allowedRoles={['customer']}>
+            <PortalLayout>
+              <CustomerPortal />
+            </PortalLayout>
+          </ProtectedRoute>
+        </Route>
+        <Route path="/portal/kb">
+          <ProtectedRoute allowedRoles={['customer']}>
+            <PortalLayout>
+              <KnowledgeBase />
+            </PortalLayout>
+          </ProtectedRoute>
+        </Route>
+        <Route path="/portal/support">
+          <ProtectedRoute allowedRoles={['customer']}>
+            <PortalLayout>
+              <Support />
+            </PortalLayout>
+          </ProtectedRoute>
+        </Route>
 
         {/* Protected Organization Routes */}
-        <Route path="/org/customers/invite" component={() => (
+        <Route path="/org/customers/invite">
           <ProtectedRoute allowedRoles={['admin', 'agent']}>
-            <AgentLayout>
+            <AdminLayout>
               <CustomerInvite />
-            </AgentLayout>
+            </AdminLayout>
           </ProtectedRoute>
-        )} />
+        </Route>
 
-        <Route path="/org/agents/invite" component={() => (
+        <Route path="/org/agents/invite">
           <ProtectedRoute allowedRoles={['admin']}>
-            <AgentLayout>
+            <AdminLayout>
               <AgentInvite />
-            </AgentLayout>
+            </AdminLayout>
           </ProtectedRoute>
-        )} />
+        </Route>
 
         {/* Admin Routes */}
         <Route path="/admin/dashboard">

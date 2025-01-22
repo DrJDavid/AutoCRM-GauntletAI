@@ -8,6 +8,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -23,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { useUserStore } from '@/stores/userStore';
 import { Link } from 'wouter';
+import { AuthHeader } from '@/components/auth/AuthHeader';
 
 const loginSchema = z.object({
   organizationSlug: z.string().min(2, 'Organization ID is required'),
@@ -80,15 +82,29 @@ export default function OrganizationLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader>
-          <CardTitle>Organization Login</CardTitle>
-          <CardDescription>
-            Sign in to access your organization's dashboard
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="container relative h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
+      <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
+        <div className="absolute inset-0 bg-zinc-900" />
+        <div className="relative z-20 flex items-center text-lg font-medium">
+          <AuthHeader />
+        </div>
+        <div className="relative z-20 mt-auto">
+          <blockquote className="space-y-2">
+            <p className="text-lg">
+              Streamline your customer support and team collaboration with AutoCRM's powerful tools and insights.
+            </p>
+          </blockquote>
+        </div>
+      </div>
+      <div className="lg:p-8">
+        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+          <div className="flex flex-col space-y-2 text-center">
+            <h1 className="text-2xl font-semibold tracking-tight">Team Login</h1>
+            <p className="text-sm text-muted-foreground">
+              Enter your organization ID and credentials to login
+            </p>
+          </div>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -158,14 +174,14 @@ export default function OrganizationLogin() {
             </form>
           </Form>
 
-          <div className="mt-4 text-center text-sm text-gray-500">
+          <p className="px-8 text-center text-sm text-muted-foreground">
             Don't have an organization yet?{' '}
             <Link href="/org/new">
-              <a className="text-blue-600 hover:underline">Create one</a>
+              <span className="underline underline-offset-4 hover:text-primary">Create one</span>
             </Link>
-          </div>
-        </CardContent>
-      </Card>
+          </p>
+        </div>
+      </div>
     </div>
   );
 } 

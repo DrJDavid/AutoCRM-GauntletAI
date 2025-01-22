@@ -1,17 +1,13 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
-import { AuthHeader } from '@/components/auth/AuthHeader';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -24,21 +20,25 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Link } from 'wouter';
+import { useToast } from '@/components/ui/use-toast';
+import { useUserStore } from '@/stores/userStore';
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  organizationSlug: z.string().min(2, 'Organization ID is required'),
+  email: z.string().email('Please enter a valid email address'),
   password: z.string().min(1, 'Password is required'),
 });
 
 export default function AgentLogin() {
   const [, setLocation] = useLocation();
+  const { login, currentUser } = useUserStore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
+      organizationSlug: '',
       email: '',
       password: '',
     },
@@ -47,34 +47,24 @@ export default function AgentLogin() {
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
       setIsLoading(true);
-
-      const { data, error } = await supabase.auth.signInWithPassword({
+      await login({
+        type: 'team',
         email: values.email,
         password: values.password,
+        organizationSlug: values.organizationSlug,
       });
-
-      if (error) throw error;
-
-      // Check if user is an agent
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
-
-      if (profileError) throw profileError;
-
-      if (profile.role !== 'agent') {
-        await supabase.auth.signOut();
-        throw new Error('This login is for agents only');
-      }
 
       toast({
         title: 'Welcome back!',
-        description: 'Successfully logged in.',
+        description: 'You have successfully logged in.',
       });
 
-      setLocation('/agent/dashboard');
+      // Redirect based on role
+      if (currentUser?.role === 'admin') {
+        setLocation('/admin/dashboard');
+      } else {
+        setLocation('/agent/dashboard');
+      }
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -87,78 +77,85 @@ export default function AgentLogin() {
   };
 
   return (
-    <div className="container relative flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-      <AuthHeader />
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold">Agent Login</CardTitle>
-            <CardDescription>
-              Enter your email and password to access your agent account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter your email"
-                          type="email"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter your password"
-                          type="password"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Logging in...' : 'Login'}
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-2 text-sm text-center">
-            <div>
-              Don't have an account?{' '}
-              <Link href="/auth/agent/register" className="text-primary hover:underline">
-                Register
-              </Link>
-            </div>
-            <div>
-              <Link href="/auth/reset-password" className="text-primary hover:underline">
-                Forgot your password?
-              </Link>
-            </div>
-          </CardFooter>
-        </Card>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <Card className="w-full max-w-lg">
+        <CardHeader>
+          <CardTitle>Agent Login</CardTitle>
+          <CardDescription>
+            Sign in to access your organization's dashboard
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="organizationSlug"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Organization ID</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="your-org-name"
+                        {...field}
+                        onChange={(e) => {
+                          const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+                          field.onChange(value);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="you@example.com"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Signing in...' : 'Sign In'}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
     </div>
   );
 } 

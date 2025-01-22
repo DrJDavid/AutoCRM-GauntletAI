@@ -1,23 +1,31 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Debug all environment variables
+console.log('Mode:', import.meta.env.MODE);
+console.log('Base URL:', import.meta.env.BASE_URL);
+console.log('DEV:', import.meta.env.DEV);
+
+// Access environment variables directly without optional chaining
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
-  throw new Error('Missing Supabase environment variables');
+// Debug logging
+console.log('Raw env values:', {
+  VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+  VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY
+});
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    'Missing Supabase environment variables. Please check your .env file and ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.'
+  );
 }
 
-// Public client
+// Public client - only uses anon key
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Admin client with service role
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
+// Remove admin client from frontend code
+// Admin operations should be handled by the backend API
 
 // Helper function to verify organization access
 export const verifyOrganizationAccess = async (organizationSlug: string) => {
