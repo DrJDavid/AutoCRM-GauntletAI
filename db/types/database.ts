@@ -44,19 +44,50 @@ export interface TeamMember {
   created_at: string;
 }
 
+export interface Attachment {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  file_name: string;
+  file_size: number;
+  content_type: string;
+  storage_path: string;
+  ticket_id?: string;
+  comment_id?: string;
+  uploaded_by: string;
+  organization_id: string;
+}
+
+export interface TicketComment {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  ticket_id: string;
+  author_id: string;
+  organization_id: string;
+  content: string;
+  is_internal: boolean;
+  edited_at?: string;
+  parent_comment_id?: string;
+  attachments?: Attachment[];
+  author?: Profile;
+}
+
 export interface Ticket {
   id: string;
   created_at: string;
   updated_at: string;
   title: string;
-  description?: string;
+  description: string;
   status: TicketStatus;
   priority: TicketPriority;
   customer_id: string;
-  assigned_agent_id?: string;
   organization_id: string;
-  tags?: string[];
-  metadata?: Record<string, any>;
+  assigned_agent_id?: string;
+  attachments?: Attachment[];
+  comments?: TicketComment[];
+  customer?: Profile;
+  assigned_agent?: Profile;
 }
 
 export interface KnowledgeArticle {

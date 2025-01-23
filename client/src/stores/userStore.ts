@@ -137,7 +137,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         } else if (role === 'agent') {
           window.location.href = '/agent/dashboard';
         } else {
-          window.location.href = '/customer/dashboard';
+          window.location.href = '/portal';
         }
       }
     } catch (error) {

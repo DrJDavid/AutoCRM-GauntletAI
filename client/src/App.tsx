@@ -47,6 +47,7 @@ const TicketDetail = () => <div>Ticket Detail</div>;
 import Landing from '@/pages/Landing';
 import TeamJoin from '@/pages/auth/team/join';
 import CustomerPortal from '@/pages/portal';
+import TicketDetails from '@/pages/portal/tickets/[id]';
 import KnowledgeBase from '@/pages/portal/kb';
 import Support from '@/pages/portal/support';
 import CustomerInvite from '@/pages/org/CustomerInvite';
@@ -130,6 +131,13 @@ function App() {
           <ProtectedRoute allowedRoles={['customer']}>
             <PortalLayout>
               <CustomerPortal />
+            </PortalLayout>
+          </ProtectedRoute>
+        </Route>
+        <Route path="/portal/tickets/:id">
+          <ProtectedRoute allowedRoles={['customer']}>
+            <PortalLayout>
+              <TicketDetails />
             </PortalLayout>
           </ProtectedRoute>
         </Route>

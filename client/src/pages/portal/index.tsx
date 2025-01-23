@@ -1,12 +1,64 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useUserStore } from "@/stores/userStore";
-import { Loader2, Plus, Search } from "lucide-react";
+import { Loader2, Plus, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CreateTicketForm } from "./components/CreateTicketForm";
+import { useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import type { Ticket } from "@/types/database";
 
+/**
+ * CustomerPortal component serves as the main dashboard for customers
+ * Features:
+ * - Overview of ticket statistics
+ * - Create new tickets
+ * - View existing tickets
+ * - Search functionality
+ */
 export default function CustomerPortal() {
   const { currentUser, isLoading } = useUserStore();
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [ticketsLoading, setTicketsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [createTicketOpen, setCreateTicketOpen] = useState(false);
+
+  // Fetch tickets for the current user
+  useEffect(() => {
+    async function fetchTickets() {
+      if (!currentUser?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('tickets')
+          .select('*')
+          .eq('customer_id', currentUser.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setTickets(data || []);
+      } catch (error) {
+        console.error('Error fetching tickets:', error);
+      } finally {
+        setTicketsLoading(false);
+      }
+    }
+
+    fetchTickets();
+  }, [currentUser?.id]);
+
+  // Filter tickets based on search query
+  const filteredTickets = tickets.filter(ticket =>
+    ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    ticket.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Calculate ticket statistics
+  const openTickets = tickets.filter(t => ['open', 'in_progress'].includes(t.status));
+  const resolvedTickets = tickets.filter(t => ['resolved', 'closed'].includes(t.status));
 
   if (isLoading) {
     return (
@@ -27,118 +79,107 @@ export default function CustomerPortal() {
           <h1 className="text-3xl font-bold">Support Portal</h1>
           <p className="text-gray-500">Welcome back, {currentUser.email}</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          New Ticket
-        </Button>
+        <Dialog open={createTicketOpen} onOpenChange={setCreateTicketOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              New Ticket
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Create New Support Ticket</DialogTitle>
+            </DialogHeader>
+            <CreateTicketForm />
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
         {/* Tickets Overview */}
         <Card>
           <CardHeader>
             <CardTitle>Your Tickets</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">3</div>
-            <p className="text-sm text-gray-500">2 open, 1 resolved</p>
+            <div className="text-3xl font-bold">{tickets.length}</div>
+            <p className="text-sm text-gray-500">
+              {openTickets.length} open, {resolvedTickets.length} resolved
+            </p>
           </CardContent>
         </Card>
 
-        {/* Average Response */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Average Response</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">2h</div>
-            <p className="text-sm text-gray-500">Last 30 days</p>
-          </CardContent>
-        </Card>
-
-        {/* Knowledge Base */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Knowledge Base</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">24</div>
-            <p className="text-sm text-gray-500">Help articles available</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent Tickets */}
-      <div className="mt-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Recent Tickets</h2>
-          <div className="flex gap-4 items-center">
-            <Search className="h-4 w-4 text-gray-500" />
-            <Input 
-              placeholder="Search tickets..." 
-              className="w-64"
+        {/* Search Box */}
+        <div className="lg:col-span-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+            <Input
+              placeholder="Search tickets..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-3"
+              >
+                <X className="h-4 w-4 text-gray-500" />
+              </button>
+            )}
           </div>
         </div>
-
-        <Card>
-          <CardContent className="divide-y">
-            {[
-              { title: "Cannot login to mobile app", status: "Open", priority: "High", updated: "1 hour ago" },
-              { title: "Billing question", status: "Open", priority: "Medium", updated: "3 hours ago" },
-              { title: "Feature request", status: "Resolved", priority: "Low", updated: "1 day ago" }
-            ].map((ticket, i) => (
-              <div key={i} className="py-4 first:pt-6 last:pb-6">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="font-medium">{ticket.title}</div>
-                    <div className="text-sm text-gray-500">Last updated: {ticket.updated}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className={`px-2 py-1 rounded text-sm ${
-                      ticket.status === 'Open' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                    }`}>
-                      {ticket.status}
-                    </span>
-                    <span className={`px-2 py-1 rounded text-sm ${
-                      ticket.priority === 'High' ? 'bg-red-100 text-red-800' :
-                      ticket.priority === 'Medium' ? 'bg-orange-100 text-orange-800' :
-                      'bg-blue-100 text-blue-800'
-                    }`}>
-                      {ticket.priority}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Quick Links */}
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">Quick Links</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Link href="/portal/kb">
-            <a className="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
-              <h3 className="font-medium">Knowledge Base</h3>
-              <p className="text-sm text-gray-500">Find answers to common questions</p>
-            </a>
-          </Link>
-          <Link href="/portal/support">
-            <a className="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
-              <h3 className="font-medium">Contact Support</h3>
-              <p className="text-sm text-gray-500">Get help from our team</p>
-            </a>
-          </Link>
-          <Link href="/portal/settings">
-            <a className="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
-              <h3 className="font-medium">Account Settings</h3>
-              <p className="text-sm text-gray-500">Manage your preferences</p>
-            </a>
-          </Link>
-        </div>
+      {/* Tickets List */}
+      <div className="space-y-4">
+        {ticketsLoading ? (
+          <div className="text-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+          </div>
+        ) : filteredTickets.length > 0 ? (
+          filteredTickets.map((ticket) => (
+            <Link key={ticket.id} href={`/portal/tickets/${ticket.id}`}>
+              <Card className="hover:bg-gray-50 transition-colors">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-lg">{ticket.title}</CardTitle>
+                      <p className="text-sm text-gray-500">
+                        Created on {new Date(ticket.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        ticket.status === 'open' ? 'bg-blue-100 text-blue-800' :
+                        ticket.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {ticket.status.replace('_', ' ')}
+                      </span>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        ticket.priority === 'low' ? 'bg-gray-100 text-gray-800' :
+                        ticket.priority === 'medium' ? 'bg-blue-100 text-blue-800' :
+                        ticket.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {ticket.priority}
+                      </span>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 line-clamp-2">{ticket.description}</p>
+                </CardContent>
+              </Card>
+            </Link>
+          ))
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            {searchQuery ? 'No tickets found matching your search' : 'No tickets yet'}
+          </div>
+        )}
       </div>
     </div>
   );
-} 
+}
