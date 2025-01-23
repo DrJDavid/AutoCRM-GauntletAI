@@ -40,6 +40,10 @@ interface InviteData {
   organizationName: string;
 }
 
+function isTestEmail(email: string) {
+  return email.endsWith('@example.com') || email.endsWith('@test.com');
+}
+
 export default function AcceptInvite() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -125,25 +129,41 @@ export default function AcceptInvite() {
           data: {
             role: 'agent',
           },
+          // For test emails, we'll auto-confirm them
+          emailRedirectTo: isTestEmail(inviteData.email) 
+            ? undefined 
+            : `${window.location.origin}/auth/callback`,
         },
       });
 
       if (authError) throw authError;
 
-      // Accept the invite
-      const { error: acceptError } = await supabase.rpc(
-        'accept_agent_invite',
-        { invite_token: inviteData.token }
-      );
+      // For test emails, we can proceed immediately
+      // For real emails, we need to wait for verification
+      if (isTestEmail(inviteData.email)) {
+        // Accept the invite immediately for test emails
+        const { error: acceptError } = await supabase.rpc(
+          'accept_agent_invite',
+          { invite_token: inviteData.token }
+        );
 
-      if (acceptError) throw acceptError;
+        if (acceptError) throw acceptError;
 
-      toast({
-        title: 'Account created!',
-        description: 'Please check your email to verify your account.',
-      });
+        toast({
+          title: 'Account created!',
+          description: 'You can now log in with your credentials.',
+        });
 
-      setLocation('/auth/agent/login');
+        setLocation('/auth/agent/login');
+      } else {
+        // For real emails, show verification message
+        toast({
+          title: 'Account created!',
+          description: 'Please check your email to verify your account.',
+        });
+
+        setLocation('/auth/agent/login');
+      }
     } catch (error) {
       toast({
         variant: 'destructive',

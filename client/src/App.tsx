@@ -9,6 +9,7 @@ import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
 import { PortalLayout } from '@/components/layout/PortalLayout';
+import { InviteManagement } from '@/components/InviteManagement';
 
 // Auth Pages
 import Login from '@/pages/auth/Login';
@@ -89,11 +90,12 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const { checkAuth } = useUserStore();
+  const checkAuth = useUserStore(state => state.checkAuth);
 
   useEffect(() => {
+    // Call checkAuth when the component mounts
     checkAuth();
-  }, [checkAuth]);
+  }, []); // Empty dependency array since we only want this to run once
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -218,6 +220,13 @@ function App() {
             </PortalLayout>
           </ProtectedRoute>
         )} />
+
+        {/* Invite Routes */}
+        <Route path="/invites" element={
+          <ProtectedRoute>
+            <InviteManagement />
+          </ProtectedRoute>
+        } />
 
         {/* Fallback Routes */}
         <Route path="/unauthorized" component={() => (

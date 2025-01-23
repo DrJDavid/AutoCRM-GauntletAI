@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import { useInviteStore } from '@/stores/inviteStore';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -25,9 +26,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Link } from 'wouter';
 
-const registerSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+const formSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8, {
+    message: "Password must be at least 8 characters",
+  }),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -35,49 +38,80 @@ const registerSchema = z.object({
 });
 
 export default function Register() {
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { checkInvite } = useInviteStore();
 
-  const form = useForm<z.infer<typeof registerSchema>>({
-    resolver: zodResolver(registerSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
-      password: '',
-      confirmPassword: '',
+      email: "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof registerSchema>) => {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      const { error } = await supabase.auth.signUp({
+      // First check for invites
+      const agentInviteResponse = await checkInvite(values.email, 'agent');
+      const customerInviteResponse = await checkInvite(values.email, 'customer');
+      
+      if (!agentInviteResponse.success && !customerInviteResponse.success) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No valid invite found for this email.",
+        });
+        return;
+      }
+
+      // Determine user type from invite
+      const invite = agentInviteResponse.success ? agentInviteResponse.data : customerInviteResponse.data;
+      const userType = agentInviteResponse.success ? 'agent' : 'customer';
+      const organizationId = invite.organization_id;
+
+      // Create the user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
           data: {
-            role: 'customer', // Default role for new registrations
-          },
-        },
+            organization_id: organizationId,
+            user_type: userType,
+          }
+        }
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
+
+      // Mark invite as accepted
+      const { error: inviteError } = await supabase
+        .from(userType === 'agent' ? 'agent_organization_invites' : 'customer_organization_invites')
+        .update({ accepted: true })
+        .eq('id', invite.id);
+
+      if (inviteError) throw inviteError;
 
       toast({
-        title: 'Registration successful!',
-        description: 'Please check your email to verify your account.',
+        title: "Success",
+        description: "Please check your email to verify your account.",
       });
-      setLocation('/login');
+
+      navigate("/login");
     } catch (error) {
+      console.error('Registration error:', error);
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to register',
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to register",
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
@@ -99,7 +133,7 @@ export default function Register() {
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter your email"
+                        placeholder="email@example.com"
                         type="email"
                         {...field}
                       />
