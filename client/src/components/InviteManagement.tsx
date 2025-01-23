@@ -1,18 +1,20 @@
 import { useState } from 'react';
-import { useInviteStore } from '../stores/inviteStore';
-import { useAuthStore } from '../stores/authStore';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Textarea } from '../components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { useInviteStore } from '@/stores/inviteStore';
+import { useUserStore } from '@/stores/userStore';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { InviteList } from './InviteList';
+import { useToast } from '@/hooks/use-toast';
 
 export const InviteManagement = () => {
-  const { user } = useAuthStore();
+  const { currentUser } = useUserStore();
   const { createAgentInvite, createCustomerInvite, isLoading, error, clearError } = useInviteStore();
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [inviteType, setInviteType] = useState<'agent' | 'customer'>('agent');
@@ -24,21 +26,42 @@ export const InviteManagement = () => {
     setSuccessMessage('');
 
     try {
-      if (!user?.organization_id) {
-        throw new Error('No organization found');
+      if (!currentUser?.organization?.id) {
+        toast({
+          title: 'Error',
+          description: 'No organization found',
+          variant: 'destructive',
+        });
+        return;
       }
 
+      console.log('Submitting invite:', { email, inviteType, message });
       const createInvite = inviteType === 'agent' ? createAgentInvite : createCustomerInvite;
-      const response = await createInvite(email, user.organization_id, message);
+      const response = await createInvite(email, currentUser.organization.id, message);
       
-      if (response?.success) {
-        setSuccessMessage(`Invite sent to ${email}`);
+      console.log('Invite response:', response);
+      if (response.success) {
+        const typeLabel = inviteType === 'agent' ? 'team member' : 'customer';
+        const successMsg = `Successfully invited ${email} as a ${typeLabel}`;
+        setSuccessMessage(successMsg);
+        toast({
+          title: 'Success',
+          description: successMsg,
+        });
         // Clear form
         setEmail('');
         setMessage('');
+      } else {
+        throw new Error('Failed to create invite');
       }
     } catch (err) {
       console.error('Failed to create invite:', err);
+      setSuccessMessage('');
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to create invite',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -58,12 +81,12 @@ export const InviteManagement = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label>Invite Type</Label>
+                <Label htmlFor="invite-type">Invite Type</Label>
                 <Select
                   value={inviteType}
                   onValueChange={(value) => setInviteType(value as 'agent' | 'customer')}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="invite-type">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -74,8 +97,9 @@ export const InviteManagement = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Email</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
+                  id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -85,8 +109,9 @@ export const InviteManagement = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Message (Optional)</Label>
+                <Label htmlFor="message">Message (Optional)</Label>
                 <Textarea
+                  id="message"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Add a personal message..."
@@ -101,13 +126,17 @@ export const InviteManagement = () => {
               )}
 
               {successMessage && (
-                <div className="text-green-600 text-sm">
+                <div className="text-green-600 text-sm mt-2">
                   {successMessage}
                 </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Sending..." : "Send Invite"}
+              <Button 
+                type="submit" 
+                disabled={isLoading || !email}
+                className="w-full"
+              >
+                {isLoading ? 'Sending Invite...' : 'Send Invite'}
               </Button>
             </form>
           </CardContent>

@@ -1,69 +1,65 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { useInviteStore } from "@/stores/inviteStore";
+import { useUserStore } from "@/stores/userStore";
+import { useToast } from "@/hooks/use-toast";
+import { InviteList } from "@/components/InviteList";
 
 export default function ManageAgents() {
-  const agents = [
-    {
-      name: "Sarah Johnson",
-      email: "sarah@example.com",
-      status: "Online",
-      activeTickets: 5,
-      performance: "95%"
-    },
-    {
-      name: "Mike Chen",
-      email: "mike@example.com",
-      status: "Away",
-      activeTickets: 3,
-      performance: "92%"
-    },
-    {
-      name: "Emma Wilson",
-      email: "emma@example.com",
-      status: "Offline",
-      activeTickets: 0,
-      performance: "88%"
+  const { currentUser } = useUserStore();
+  const { createAgentInvite, isLoading } = useInviteStore();
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser?.organization?.id) {
+      toast({
+        title: "Error",
+        description: "No organization found",
+        variant: "destructive",
+      });
+      return;
     }
-  ];
+
+    try {
+      const response = await createAgentInvite(email, currentUser.organization.id);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: `Successfully invited ${email} as a team member`,
+        });
+        // Clear form
+        setEmail("");
+      } else {
+        throw new Error("Failed to create invite");
+      }
+    } catch (err) {
+      console.error("Failed to create invite:", err);
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to create invite",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Manage Agents</h1>
-        <Button>Invite New Agent</Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Active Agents</CardTitle>
+            <CardTitle>Active Invites</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {agents.map((agent, i) => (
-                <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <div className="font-medium">{agent.name}</div>
-                    <div className="text-sm text-gray-500">{agent.email}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className={`text-sm font-medium ${
-                      agent.status === 'Online' ? 'text-green-600' :
-                      agent.status === 'Away' ? 'text-yellow-600' :
-                      'text-gray-600'
-                    }`}>
-                      {agent.status}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {agent.activeTickets} active tickets
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <InviteList type="agent" />
           </CardContent>
         </Card>
 
@@ -72,52 +68,29 @@ export default function ManageAgents() {
             <CardTitle>Invite New Agent</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <form onSubmit={handleInvite} className="space-y-4">
               <div className="space-y-2">
-                <Label>Email Address</Label>
-                <Input type="email" placeholder="agent@example.com" />
-              </div>
-              <div className="space-y-2">
-                <Label>Message (Optional)</Label>
-                <Textarea 
-                  placeholder="Add a personal message to the invitation"
-                  className="min-h-[100px]"
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="agent@example.com"
+                  required
                 />
               </div>
-              <Button className="w-full">Send Invitation</Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Agent Performance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {agents.map((agent, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">{agent.name}</div>
-                    <div className="text-sm text-gray-500">
-                      Customer Satisfaction Rate
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-green-500 rounded-full"
-                        style={{ width: agent.performance }}
-                      />
-                    </div>
-                    <span className="font-medium">{agent.performance}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isLoading || !email}
+              >
+                {isLoading ? "Sending Invitation..." : "Send Invitation"}
+              </Button>
+            </form>
           </CardContent>
         </Card>
       </div>
     </div>
   );
-} 
+}

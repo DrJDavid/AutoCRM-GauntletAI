@@ -5,8 +5,8 @@ interface InviteStore {
   isLoading: boolean;
   error: string | null;
   clearError: () => void;
-  createAgentInvite: (email: string, organizationId: string, message?: string) => Promise<{ success: boolean }>;
-  createCustomerInvite: (email: string, organizationId: string, message?: string) => Promise<{ success: boolean }>;
+  createAgentInvite: (email: string, organizationId: string) => Promise<{ success: boolean; token?: string }>;
+  createCustomerInvite: (email: string, organizationId: string) => Promise<{ success: boolean; token?: string }>;
   deleteInvite: (id: string, type: 'agent' | 'customer') => Promise<{ success: boolean }>;
   checkInvite: (email: string, type: 'agent' | 'customer') => Promise<any>;
 }
@@ -17,27 +17,45 @@ export const useInviteStore = create<InviteStore>((set, get) => ({
 
   clearError: () => set({ error: null }),
 
-  createAgentInvite: async (email: string, organizationId: string, message?: string) => {
+  createAgentInvite: async (email: string, organizationId: string) => {
+    console.log('Creating agent invite:', { email, organizationId });
     set({ isLoading: true, error: null });
     
     try {
-      const { data, error } = await supabase
-        .from('agent_organization_invites')
-        .insert([
-          {
-            email,
-            organization_id: organizationId,
-            message,
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-          },
-        ])
-        .select()
-        .single();
+      // First try the new create_invite function
+      console.log('Attempting to create invite with create_invite function...');
+      const { data: token, error: rpcError } = await supabase.rpc('create_invite', {
+        org_id: organizationId,
+        email,
+        invite_type: 'agent'
+      });
 
-      if (error) throw error;
+      if (rpcError) {
+        console.error('RPC error:', rpcError);
+        // Fall back to direct table insert if RPC fails
+        console.log('Falling back to direct table insert...');
+        const { data, error: insertError } = await supabase
+          .from('agent_organization_invites')
+          .insert([
+            {
+              email,
+              organization_id: organizationId,
+              expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+              token: crypto.randomUUID(), // Generate UUID on client side
+            },
+          ])
+          .select()
+          .single();
 
-      return { success: true };
+        if (insertError) throw insertError;
+        console.log('Insert successful:', data);
+        return { success: true, token: data.token };
+      }
+
+      console.log('RPC successful:', token);
+      return { success: true, token };
     } catch (err: any) {
+      console.error('Error in createAgentInvite:', err);
       set({ error: err.message });
       return { success: false };
     } finally {
@@ -45,27 +63,45 @@ export const useInviteStore = create<InviteStore>((set, get) => ({
     }
   },
 
-  createCustomerInvite: async (email: string, organizationId: string, message?: string) => {
+  createCustomerInvite: async (email: string, organizationId: string) => {
+    console.log('Creating customer invite:', { email, organizationId });
     set({ isLoading: true, error: null });
     
     try {
-      const { data, error } = await supabase
-        .from('customer_organization_invites')
-        .insert([
-          {
-            email,
-            organization_id: organizationId,
-            message,
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-          },
-        ])
-        .select()
-        .single();
+      // First try the new create_invite function
+      console.log('Attempting to create invite with create_invite function...');
+      const { data: token, error: rpcError } = await supabase.rpc('create_invite', {
+        org_id: organizationId,
+        email,
+        invite_type: 'customer'
+      });
 
-      if (error) throw error;
+      if (rpcError) {
+        console.error('RPC error:', rpcError);
+        // Fall back to direct table insert if RPC fails
+        console.log('Falling back to direct table insert...');
+        const { data, error: insertError } = await supabase
+          .from('customer_organization_invites')
+          .insert([
+            {
+              email,
+              organization_id: organizationId,
+              expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+              token: crypto.randomUUID(), // Generate UUID on client side
+            },
+          ])
+          .select()
+          .single();
 
-      return { success: true };
+        if (insertError) throw insertError;
+        console.log('Insert successful:', data);
+        return { success: true, token: data.token };
+      }
+
+      console.log('RPC successful:', token);
+      return { success: true, token };
     } catch (err: any) {
+      console.error('Error in createCustomerInvite:', err);
       set({ error: err.message });
       return { success: false };
     } finally {
@@ -75,17 +111,14 @@ export const useInviteStore = create<InviteStore>((set, get) => ({
 
   deleteInvite: async (id: string, type: 'agent' | 'customer') => {
     set({ isLoading: true, error: null });
-    
     try {
       const table = type === 'agent' ? 'agent_organization_invites' : 'customer_organization_invites';
-      
       const { error } = await supabase
         .from(table)
         .delete()
         .eq('id', id);
 
       if (error) throw error;
-
       return { success: true };
     } catch (err: any) {
       set({ error: err.message });
@@ -101,19 +134,17 @@ export const useInviteStore = create<InviteStore>((set, get) => ({
       const table = type === 'agent' ? 'agent_organization_invites' : 'customer_organization_invites';
       const { data, error } = await supabase
         .from(table)
-        .select('*, organizations(*)')
+        .select()
         .eq('email', email)
         .eq('accepted', false)
-        .gte('expires_at', new Date().toISOString())
+        .gt('expires_at', new Date().toISOString())
         .single();
 
       if (error) throw error;
-
-      return { success: true, data };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to check invite';
-      set({ error: message });
-      return { success: false, error: message };
+      return data;
+    } catch (err: any) {
+      set({ error: err.message });
+      return null;
     } finally {
       set({ isLoading: false });
     }
