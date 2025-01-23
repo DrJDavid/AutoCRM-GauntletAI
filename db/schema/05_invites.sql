@@ -54,6 +54,15 @@ CREATE INDEX idx_customer_invites_org ON customer_organization_invites(organizat
 CREATE INDEX idx_customer_invites_email ON customer_organization_invites(email);
 CREATE INDEX idx_customer_invites_expires ON customer_organization_invites(expires_at);
 
+-- Performance Indexes for List Queries
+-- =================================
+-- These indexes optimize the common query patterns for listing invites:
+-- 1. Filtering by organization (RLS)
+-- 2. Filtering by acceptance status
+-- 3. Sorting by creation date
+CREATE INDEX idx_agent_invites_org_status ON agent_organization_invites(organization_id, accepted, created_at DESC);
+CREATE INDEX idx_customer_invites_org_status ON customer_organization_invites(organization_id, accepted, created_at DESC);
+
 -- Row Level Security
 -- =================
 

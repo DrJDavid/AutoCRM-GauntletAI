@@ -44,8 +44,11 @@ export const getUserProfile = async (userId: string) => {
   const { data: profile, error } = await supabase
     .from('profiles')
     .select(`
-      *,
-      organizations (
+      id,
+      email,
+      role,
+      organization_id,
+      organization:organizations!organization_id (
         id,
         name,
         slug
@@ -55,5 +58,10 @@ export const getUserProfile = async (userId: string) => {
     .single();
 
   if (error) throw error;
-  return profile;
+
+  // Transform the response to match the expected format
+  return {
+    ...profile,
+    organizations: profile.organization // Rename organization to organizations to match expected format
+  };
 };

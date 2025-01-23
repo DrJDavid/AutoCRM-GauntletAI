@@ -25,10 +25,22 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Link } from 'wouter';
+import { useUserStore } from '@/stores/userStore';
 
 const registerSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string()
+    .email('Please enter a valid email address')
+    .refine(email => {
+      // Allow test emails in specific formats
+      if (email.endsWith('@example.com') || email.endsWith('@test.com')) {
+        return true;
+      }
+      // For non-test emails, require more strict format
+      return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+    }, 'Please enter a valid email address'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(100, 'Password must not exceed 100 characters'),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -52,6 +64,7 @@ export default function Register() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const { signUp } = useUserStore();
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -65,61 +78,67 @@ export default function Register() {
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     try {
       setLoading(true);
+      console.log('Starting registration process for email:', values.email);
 
-      // Get invite token from URL
-      const token = new URLSearchParams(window.location.search).get('token');
-      if (!token) {
-        toast({
-          title: 'Error',
-          description: 'Invalid invitation link',
-          variant: 'destructive',
+      // Validate invite by email
+      console.log('Calling validate_invite_by_email with:', {
+        email_param: values.email,
+        type_param: 'customer'
+      });
+
+      const { data: validationResult, error: validationError } = await supabase
+        .rpc('validate_invite_by_email', {
+          email_param: values.email,
+          type_param: 'customer'
         });
-        return;
+
+      console.log('Raw validation result:', validationResult);
+      
+      // The function returns an array with one row
+      const result = Array.isArray(validationResult) ? validationResult[0] : validationResult;
+      
+      console.log('Processed validation result:', result);
+
+      if (validationError) {
+        console.error('Invite validation error:', {
+          message: validationError.message,
+          details: validationError.details,
+          hint: validationError.hint
+        });
+        throw new Error('Failed to verify invitation');
       }
 
-      // Verify invite
-      const inviteResponse = await fetch(`/api/auth/verify-invite/${token}?type=customer`);
-      if (!inviteResponse.ok) {
-        throw new Error('Invalid or expired invitation');
+      if (!result) {
+        console.error('No validation result returned');
+        throw new Error('Failed to verify invitation - no result returned');
       }
-      const invite: InviteWithOrg = await inviteResponse.json();
+
+      if (!result.is_valid) {
+        console.error('Invalid validation result:', result);
+        throw new Error(result.error_message || 'No valid invitation found for this email');
+      }
 
       // Register user
-      const registerResponse = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: values.email,
-          password: values.password,
-          role: 'customer',
-          organizationId: invite.organization_id,
-        }),
-      });
-
-      if (!registerResponse.ok) {
-        throw new Error('Failed to register user');
-      }
-
-      // Sign in the user
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      console.log('Valid invite found, proceeding with registration:', {
         email: values.email,
-        password: values.password,
+        role: 'customer',
+        organizationId: result.organization_id
       });
-
-      if (signInError) throw signInError;
+      
+      await signUp(values.email, values.password, 'customer', result.organization_id);
 
       toast({
         title: 'Success',
-        description: 'Registration successful',
+        description: 'Registration successful! Please check your email to verify your account.',
       });
 
-      navigate('/portal/dashboard');
+      // Redirect to login
+      navigate('/auth/customer/login');
     } catch (error) {
+      console.error('Registration error:', error);
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to register',
+        description: error instanceof Error ? error.message : 'Failed to register. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -160,7 +179,11 @@ export default function Register() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter your email" {...field} />
+                      <Input 
+                        type="email"
+                        placeholder="you@example.com"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -175,7 +198,7 @@ export default function Register() {
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="Create a password"
+                        placeholder="••••••••"
                         {...field}
                       />
                     </FormControl>
@@ -192,7 +215,7 @@ export default function Register() {
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="Confirm your password"
+                        placeholder="••••••••"
                         {...field}
                       />
                     </FormControl>
@@ -206,12 +229,14 @@ export default function Register() {
             </form>
           </Form>
 
-          <p className="px-8 text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <Link href="/auth/customer/login" className="underline underline-offset-4 hover:text-primary">
-              Sign in
-            </Link>
-          </p>
+          <div className="space-y-2">
+            <p className="px-8 text-center text-sm text-muted-foreground">
+              Already have an account?{' '}
+              <Link href="/auth/customer/login" className="underline underline-offset-4 hover:text-primary">
+                Sign in
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -41,7 +41,7 @@ export const useInviteStore = create<InviteStore>((set, get) => ({
               email,
               organization_id: organizationId,
               expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-              token: crypto.randomUUID(), // Generate UUID on client side
+              token: crypto.randomUUID() // Generate UUID on client side
             },
           ])
           .select()
@@ -87,7 +87,7 @@ export const useInviteStore = create<InviteStore>((set, get) => ({
               email,
               organization_id: organizationId,
               expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-              token: crypto.randomUUID(), // Generate UUID on client side
+              token: crypto.randomUUID() // Generate UUID on client side
             },
           ])
           .select()

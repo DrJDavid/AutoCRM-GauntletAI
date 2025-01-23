@@ -31,7 +31,7 @@ interface UserState {
   signOut: () => Promise<void>;
 }
 
-export const useUserStore = create<UserState>((set) => ({
+export const useUserStore = create<UserState>((set, get) => ({
   currentUser: null,
   isAuthenticated: false,
   isLoading: true,
@@ -39,123 +39,236 @@ export const useUserStore = create<UserState>((set) => ({
 
   checkAuth: async () => {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) throw error;
+      set({ isLoading: true });
+      
+      // Get the current session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
 
-      if (session?.user) {
-        const profile = await getUserProfile(session.user.id);
-        set({
-          currentUser: {
-            id: session.user.id,
-            email: session.user.email!,
-            role: profile.role,
-            organization: profile.organizations,
-          },
-          isAuthenticated: true
+      // If no session, clear state and return
+      if (!session) {
+        set({ 
+          currentUser: null, 
+          isAuthenticated: false, 
+          isLoading: false,
+          error: null 
         });
+        return;
       }
+
+      // Get user profile
+      const profile = await getUserProfile(session.user.id);
+      
+      set({
+        currentUser: {
+          id: session.user.id,
+          email: session.user.email!,
+          role: profile.role,
+          organization: profile.organizations,
+        },
+        isAuthenticated: true,
+        error: null
+      });
+
+      // Setup auth state change listener
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_OUT') {
+          set({ 
+            currentUser: null, 
+            isAuthenticated: false,
+            error: null 
+          });
+        } else if (event === 'SIGNED_IN' && session) {
+          const profile = await getUserProfile(session.user.id);
+          set({
+            currentUser: {
+              id: session.user.id,
+              email: session.user.email!,
+              role: profile.role,
+              organization: profile.organizations,
+            },
+            isAuthenticated: true,
+            error: null
+          });
+        }
+      });
+
     } catch (error) {
       console.error('Auth check failed:', error);
+      set({ 
+        currentUser: null, 
+        isAuthenticated: false,
+        error: error as Error 
+      });
     } finally {
       set({ isLoading: false });
     }
   },
 
   login: async ({ type, email, password, organizationSlug }: AuthCredentials) => {
-    if (type === 'team' && !organizationSlug) {
-      throw new Error('Organization ID is required for team login');
-    }
+    try {
+      set({ isLoading: true, error: null });
 
-    // For team members, verify organization access first
-    if (type === 'team') {
-      await verifyOrganizationAccess(organizationSlug!);
-    }
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) throw error;
-
-    if (data.user) {
-      const profile = await getUserProfile(data.user.id);
-
-      // Verify user has access to the specified organization
-      if (type === 'team' && profile.organizations?.slug !== organizationSlug) {
-        await supabase.auth.signOut();
-        throw new Error('You do not have access to this organization');
-      }
-
-      set({
-        currentUser: {
-          id: data.user.id,
-          email: data.user.email!,
-          role: profile.role,
-          organization: profile.organizations,
-        },
-        isAuthenticated: true
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-    }
-  },
 
-  logout: async () => {
-    await supabase.auth.signOut();
-    set({ currentUser: null, isAuthenticated: false });
+      if (error) throw error;
+
+      if (data.user) {
+        const profile = await getUserProfile(data.user.id);
+
+        set({
+          currentUser: {
+            id: data.user.id,
+            email: data.user.email!,
+            role: profile.role,
+            organization: profile.organizations,
+          },
+          isAuthenticated: true,
+          error: null
+        });
+
+        // Redirect based on role
+        const role = profile.role;
+        if (role === 'admin') {
+          window.location.href = '/admin/dashboard';
+        } else if (role === 'agent') {
+          window.location.href = '/agent/dashboard';
+        } else {
+          window.location.href = '/customer/dashboard';
+        }
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+      set({ 
+        error: error as Error,
+        isAuthenticated: false,
+        currentUser: null
+      });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
   signUp: async (email: string, password: string, role: string, organizationId?: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          role,
-          organization_id: organizationId
-        }
+    try {
+      set({ isLoading: true, error: null });
+
+      // Clean the email
+      const cleanEmail = email.trim().toLowerCase();
+      console.log('Attempting signup with cleaned email:', cleanEmail);
+
+      // First check if user exists
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', cleanEmail)
+        .single();
+
+      if (existingUser) {
+        throw new Error('An account with this email already exists');
       }
-    });
 
-    if (error) throw error;
+      if (!organizationId) {
+        throw new Error('Organization ID is required for registration');
+      }
 
-    if (data.user) {
-      // Create profile
+      // Sign up the user
+      const { data, error } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password,
+        options: {
+          data: {
+            role,
+            organization_id: organizationId,
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        },
+      });
+
+      if (error) {
+        console.error('Signup error:', error);
+        throw error;
+      }
+      if (!data.user) throw new Error('Failed to create user account');
+
+      console.log('User created successfully:', data.user);
+
+      // Create profile with organization_id
+      const profileData = {
+        id: data.user.id,
+        email: cleanEmail,
+        role,
+        organization_id: organizationId, // Ensure this is set
+      };
+
+      console.log('Creating profile with data:', profileData);
+
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert([
-          {
-            id: data.user.id,
-            email: data.user.email,
-            role: role,
-            organization_id: organizationId
-          }
-        ]);
+        .insert([profileData]);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Failed to create profile:', profileError);
+        throw new Error('Failed to create user profile');
+      }
 
+      console.log('Profile created successfully');
+
+      // Set the user state
       set({
+        isLoading: false,
+        error: null,
         currentUser: {
           id: data.user.id,
-          email: data.user.email!,
-          role: role as 'admin' | 'agent' | 'customer',
-          organization: organizationId ? {
+          email: cleanEmail,
+          role,
+          organization: {
             id: organizationId,
-            name: '', // Will be populated on next auth check
-            slug: ''
-          } : undefined
+            name: '', // We can fetch this later if needed
+            slug: ''  // We can fetch this later if needed
+          }
         },
         isAuthenticated: true
       });
+
+    } catch (error) {
+      console.error('Registration failed:', error);
+      set({ error: error as Error });
+      throw error;
+    } finally {
+      set({ isLoading: false });
     }
   },
 
   signOut: async () => {
     try {
+      set({ isLoading: true });
+      
+      // First clear the auth state
+      set({
+        currentUser: null,
+        isAuthenticated: false,
+        error: null
+      });
+
+      // Then sign out from Supabase
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      set({ currentUser: null, error: null });
+
+      // Clear any persisted state
+      localStorage.removeItem('supabase.auth.token');
+      
+      // Redirect to home
+      window.location.href = '/';
     } catch (error) {
-      set({ error: error as Error });
+      console.error('Sign out failed:', error);
+      throw error;
+    } finally {
+      set({ isLoading: false });
     }
-  }
+  },
 }));

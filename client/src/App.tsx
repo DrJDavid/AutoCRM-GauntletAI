@@ -10,6 +10,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
 import { PortalLayout } from '@/components/layout/PortalLayout';
 import { InviteManagement } from '@/components/InviteManagement';
+import AgentDashboard from '@/pages/agent/dashboard';
 
 // Auth Pages
 import Login from '@/pages/auth/Login';
@@ -39,7 +40,6 @@ import type { UserRole } from '@/types';
 const OrganizationInvite = () => <div>Organization Invite Page</div>;
 const OrganizationSettings = () => <div>Organization Settings Page</div>;
 const AdminDashboard = () => <div>Admin Dashboard</div>;
-const AgentDashboard = () => <div>Agent Dashboard</div>;
 const TicketList = () => <div>Ticket List</div>;
 const TicketDetail = () => <div>Ticket Detail</div>;
 
@@ -116,6 +116,10 @@ function App() {
         <Route path="/auth/team/accept-invite" component={TeamAcceptInvite} />
         <Route path="/auth/team/login" component={TeamLogin} />
         
+        {/* Agent Routes */}
+        <Route path="/auth/agent/login" component={AgentLogin} />
+        <Route path="/auth/agent/register" component={AgentRegister} />
+        
         {/* Customer Routes */}
         <Route path="/auth/customer/accept-invite" component={CustomerAcceptInvite} />
         <Route path="/auth/customer/login" component={CustomerLogin} />
@@ -158,6 +162,15 @@ function App() {
             <AdminLayout>
               <AgentInvite />
             </AdminLayout>
+          </ProtectedRoute>
+        </Route>
+
+        {/* Agent Dashboard */}
+        <Route path="/agent/dashboard">
+          <ProtectedRoute allowedRoles={['agent']}>
+            <AgentLayout>
+              <AgentDashboard />
+            </AgentLayout>
           </ProtectedRoute>
         </Route>
 
