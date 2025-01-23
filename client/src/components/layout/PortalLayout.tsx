@@ -1,6 +1,8 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { Home, ArrowLeft } from 'lucide-react';
+import { Home, ArrowLeft, LogOut } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
+import { useToast } from '@/components/ui/use-toast';
 
 interface PortalLayoutProps {
   children: React.ReactNode;
@@ -8,6 +10,24 @@ interface PortalLayoutProps {
 
 export function PortalLayout({ children }: PortalLayoutProps) {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      // Navigate to home page after successful logout
+      setLocation('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to log out. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -50,6 +70,15 @@ export function PortalLayout({ children }: PortalLayoutProps) {
               >
                 Contact Support
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Log Out
+              </Button>
             </div>
           </div>
         </div>
@@ -59,4 +88,4 @@ export function PortalLayout({ children }: PortalLayoutProps) {
       {children}
     </div>
   );
-} 
+}

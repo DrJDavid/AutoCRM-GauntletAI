@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'wouter';
-import { Loader2, Clock, AlertCircle, CheckCircle2, Pencil } from 'lucide-react';
+import { Loader2, Clock, AlertCircle, CheckCircle2, Pencil, Upload } from 'lucide-react';
 import { useUserStore } from '@/stores/userStore';
-import { getFileUrl } from '@/lib/uploadFiles';
+import { getFileUrl, uploadFiles } from '@/lib/uploadFiles';
 import { useTicket } from '@/hooks/useTicket';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useDropzone } from 'react-dropzone';
+import { TicketChat } from '@/components/chat/TicketChat';
 import type { Attachment } from '@/db/types/database';
 
 const statusColors = {
@@ -51,6 +53,7 @@ export default function TicketDetailsPage() {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [downloadUrls, setDownloadUrls] = useState<Record<string, string>>({});
+  const [isUploading, setIsUploading] = useState(false);
 
   const {
     ticket,
@@ -59,6 +62,7 @@ export default function TicketDetailsPage() {
     updateStatus,
     updatePriority,
     updateDetails,
+    refresh,
   } = useTicket(id, { realtime: true });
 
   const form = useForm<EditTicketFormValues>({
@@ -161,6 +165,38 @@ export default function TicketDetailsPage() {
     }
   };
 
+  const onDrop = async (acceptedFiles: File[]) => {
+    if (!ticket || !currentUser) return;
+
+    try {
+      setIsUploading(true);
+      await uploadFiles(acceptedFiles, {
+        ticketId: ticket.id,
+        organizationId: currentUser.organization?.id || '',
+      });
+      refresh(); // Refresh ticket data to get new attachments
+      toast({
+        title: 'Success',
+        description: 'Files uploaded successfully',
+      });
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to upload files',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    multiple: true,
+    maxSize: 10 * 1024 * 1024, // 10MB
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
@@ -210,6 +246,7 @@ export default function TicketDetailsPage() {
       <Tabs defaultValue="details">
         <TabsList>
           <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="chat">Chat</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
 
@@ -220,11 +257,35 @@ export default function TicketDetailsPage() {
             <p className="whitespace-pre-wrap">{ticket.description}</p>
           </Card>
 
-          {/* Attachments */}
-          {ticket.attachments && ticket.attachments.length > 0 && (
-            <Card className="p-6">
-              <h2 className="font-semibold mb-4">Attachments</h2>
-              <ul className="space-y-2">
+          {/* File Upload */}
+          <Card className="p-6">
+            <h2 className="font-semibold mb-4">Attachments</h2>
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
+              }`}
+            >
+              <input {...getInputProps()} />
+              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              {isUploading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <p>Uploading...</p>
+                </div>
+              ) : isDragActive ? (
+                <p>Drop the files here...</p>
+              ) : (
+                <div className="space-y-1">
+                  <p>Drag and drop files here, or click to select files</p>
+                  <p className="text-sm text-muted-foreground">Up to 10MB per file</p>
+                </div>
+              )}
+            </div>
+
+            {/* Attachments List */}
+            {ticket.attachments && ticket.attachments.length > 0 && (
+              <ul className="mt-4 space-y-2">
                 {ticket.attachments.map((attachment) => (
                   <li
                     key={attachment.id}
@@ -246,8 +307,8 @@ export default function TicketDetailsPage() {
                   </li>
                 ))}
               </ul>
-            </Card>
-          )}
+            )}
+          </Card>
 
           {/* Assignment */}
           <Card className="p-6">
@@ -263,6 +324,12 @@ export default function TicketDetailsPage() {
                 <span>Not assigned</span>
               </div>
             )}
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="chat" className="space-y-6">
+          <Card>
+            <TicketChat ticketId={ticket.id} />
           </Card>
         </TabsContent>
 
