@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabaseClient';
-import type { Database } from '@/types/database';
+import type { Profile } from '@/db/types/database';
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
+// Track if an auth check is in progress to prevent duplicates
+let authCheckInProgress = false;
 
 interface AuthCredentials {
-  type: 'team' | 'customer';
   email: string;
   password: string;
+  type?: 'team' | 'customer';
   organizationSlug?: string;
 }
 
@@ -16,10 +17,10 @@ interface UserState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: Error | null;
-  login: (credentials: AuthCredentials) => Promise<void>;
+  login: (credentials: AuthCredentials) => Promise<Profile | null>;
   signUp: (email: string, password: string, role: string, organizationId?: string) => Promise<void>;
   logout: () => Promise<void>;
-  checkAuth: () => Promise<void>;
+  checkAuth: () => Promise<Profile | null>;
 }
 
 export const useUserStore = create<UserState>()((set) => ({
@@ -29,36 +30,69 @@ export const useUserStore = create<UserState>()((set) => ({
   error: null,
 
   checkAuth: async () => {
+    // Prevent multiple simultaneous auth checks
+    if (authCheckInProgress) {
+      console.log('Auth check already in progress, skipping...');
+      return useUserStore.getState().currentUser;
+    }
+
     try {
-      set({ isLoading: true, error: null });
+      authCheckInProgress = true;
+      console.log('Starting auth check...');
+      
+      // Don't set loading if we already have a user
+      const currentUser = useUserStore.getState().currentUser;
+      if (!currentUser) {
+        set({ isLoading: true, error: null });
+      } else {
+        console.log('User already exists in store, skipping auth check');
+        return currentUser;
+      }
       
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        throw sessionError;
+      }
 
-      if (!session) {
+      if (!session?.user) {
+        console.log('No active session');
         set({ 
           currentUser: null, 
           isAuthenticated: false, 
           isLoading: false,
           error: null 
         });
-        return;
+        return null;
       }
 
+      console.log('Session found, fetching profile...');
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, organization:organizations(*)')
         .eq('id', session.user.id)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        throw profileError;
+      }
 
+      if (!profile) {
+        console.error('No profile found');
+        throw new Error('Profile not found');
+      }
+
+      console.log('Profile loaded successfully');
       set({
         currentUser: profile,
         isAuthenticated: true,
         isLoading: false,
         error: null
       });
+
+      return profile;
 
     } catch (error) {
       console.error('Auth check failed:', error);
@@ -68,13 +102,17 @@ export const useUserStore = create<UserState>()((set) => ({
         isLoading: false,
         error: error instanceof Error ? error : new Error('Authentication failed') 
       });
+      return null;
+    } finally {
+      authCheckInProgress = false;
     }
   },
 
-  login: async ({ email, password }: AuthCredentials) => {
+  login: async ({ email, password, type, organizationSlug }: AuthCredentials) => {
     try {
       set({ isLoading: true, error: null });
 
+      // Perform login
       const { data: { session }, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -83,27 +121,52 @@ export const useUserStore = create<UserState>()((set) => ({
       if (authError) throw authError;
       if (!session) throw new Error('No session after login');
 
+      // Get user profile with organization data
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, organization:organizations(*)')
         .eq('id', session.user.id)
         .single();
 
       if (profileError) throw profileError;
+      if (!profile) throw new Error('Profile not found');
 
+      // Verify organization access if team login
+      if (type === 'team' && organizationSlug) {
+        const { data: org, error: orgError } = await supabase
+          .from('organizations')
+          .select('id, slug')
+          .eq('slug', organizationSlug)
+          .single();
+
+        if (orgError || !org) {
+          throw new Error('Invalid organization');
+        }
+
+        if (org.id !== profile.organization_id) {
+          throw new Error('You do not have access to this organization');
+        }
+      }
+
+      // Update store state
       set({
         currentUser: profile,
         isAuthenticated: true,
         isLoading: false,
         error: null
       });
+
+      return profile;
+
     } catch (error) {
       console.error('Login failed:', error);
-      set({
-        currentUser: null,
+      // Sign out on error to ensure clean state
+      await supabase.auth.signOut();
+      set({ 
+        currentUser: null, 
         isAuthenticated: false,
         isLoading: false,
-        error: error instanceof Error ? error : new Error('Login failed')
+        error: error instanceof Error ? error : new Error('Login failed') 
       });
       throw error;
     }

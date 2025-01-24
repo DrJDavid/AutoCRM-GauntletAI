@@ -3,6 +3,7 @@ import { Switch, Route, Link } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { useUserStore } from '@/stores/userStore';
+import { supabase } from '@/lib/supabaseClient';
 import { Toaster } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/layout/Header';
@@ -94,8 +95,41 @@ function App() {
   const checkAuth = useUserStore((state) => state.checkAuth);
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]); // Add checkAuth to dependency array
+    // Initial auth check only if we don't have a user
+    if (!useUserStore.getState().currentUser) {
+      checkAuth();
+    }
+
+    // Set up auth state listener
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      
+      // Only update state for sign in/out events
+      switch (event) {
+        case 'SIGNED_IN':
+          // Only check auth if we don't have a user and it's not an initial session
+          if (!useUserStore.getState().currentUser && event !== 'INITIAL_SESSION') {
+            await checkAuth();
+          }
+          break;
+        case 'SIGNED_OUT':
+          useUserStore.setState({ 
+            currentUser: null, 
+            isAuthenticated: false,
+            isLoading: false,
+            error: null 
+          });
+          break;
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []); // Empty dependency array since checkAuth is stable
 
   return (
     <QueryClientProvider client={queryClient}>
