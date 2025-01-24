@@ -2,6 +2,7 @@
 import { useLocation } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import { useUserStore } from '@/stores/userStore';
+import { useToast } from '@/components/ui/use-toast';
 import {
   Card,
   CardContent,
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { UserPlus } from 'lucide-react';
 
 interface Ticket {
   id: string;
@@ -28,69 +30,117 @@ interface Ticket {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   created_at: string;
   customer_id: string;
+  assigned_agent_id: string | null;
   customer: {
     email: string;
   };
   organization_id: string;
 }
 
+const priorityColors = {
+  urgent: 'bg-red-100 text-red-800',
+  high: 'bg-orange-100 text-orange-800',
+  medium: 'bg-yellow-100 text-yellow-800',
+  low: 'bg-green-100 text-green-800',
+};
+
+const statusColors = {
+  open: 'bg-blue-100 text-blue-800',
+  in_progress: 'bg-purple-100 text-purple-800',
+  resolved: 'bg-gray-100 text-gray-800',
+};
+
 export default function AgentDashboard() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const { currentUser } = useUserStore();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (currentUser?.organization_id) {
-      fetchTickets();
-    }
-  }, [currentUser]);
+    async function fetchTickets() {
+      if (!currentUser?.organization_id) return;
 
-  const fetchTickets = async () => {
-    try {
-      if (!currentUser?.organization_id) {
-        console.error('No organization ID found');
-        return;
+      try {
+        const { data, error } = await supabase
+          .from('tickets')
+          .select(`
+            *,
+            customer:customer_id(
+              id,
+              email,
+              full_name
+            ),
+            assigned_to:assigned_agent_id(
+              id,
+              email,
+              full_name
+            )
+          `)
+          .eq('organization_id', currentUser.organization_id)
+          .order('created_at', { ascending: false }); // Newest first
+
+        if (error) throw error;
+        setTickets(data || []);
+      } catch (error) {
+        console.error('Error fetching tickets:', error);
+      } finally {
+        setLoading(false);
       }
+    }
 
-      const { data, error } = await supabase
+    fetchTickets();
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel('tickets-dashboard')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tickets',
+          filter: `organization_id=eq.${currentUser?.organization_id}`,
+        },
+        () => {
+          fetchTickets();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser?.organization_id]);
+
+  const handleAssignToMe = async (e: React.MouseEvent, ticketId: string) => {
+    e.stopPropagation(); // Prevent row click
+    if (!currentUser?.id) return;
+
+    try {
+      const { error } = await supabase
         .from('tickets')
-        .select(`
-          *,
-          customer:profiles!customer_id (
-            email
-          )
-        `)
-        .eq('organization_id', currentUser.organization_id)
-        .order('created_at', { ascending: false });
+        .update({ assigned_agent_id: currentUser.id })
+        .eq('id', ticketId);
 
       if (error) throw error;
-      setTickets(data || []);
+
+      toast({
+        title: "Success",
+        description: "Ticket assigned successfully.",
+      });
     } catch (error) {
-      console.error('Error fetching tickets:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error assigning ticket:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to assign ticket. Please try again.",
+      });
     }
   };
 
-  const getStatusBadgeColor = (status: Ticket['status']) => {
-    const colors = {
-      open: 'bg-yellow-500',
-      in_progress: 'bg-blue-500',
-      resolved: 'bg-green-500',
-      closed: 'bg-gray-500'
-    };
-    return colors[status];
-  };
-
-  const getPriorityBadgeColor = (priority: Ticket['priority']) => {
-    const colors = {
-      low: 'bg-gray-500',
-      medium: 'bg-yellow-500',
-      high: 'bg-orange-500',
-      urgent: 'bg-red-500'
-    };
-    return colors[priority];
+  const handleRowClick = (ticketId: string) => {
+    setLocation(`/agent/tickets/${ticketId}`);
   };
 
   if (loading) {
@@ -107,11 +157,11 @@ export default function AgentDashboard() {
         <Button>Create Ticket</Button>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Open Tickets</CardTitle>
-            <CardDescription>Active tickets requiring attention</CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">
@@ -119,11 +169,9 @@ export default function AgentDashboard() {
             </p>
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader>
-            <CardTitle>In Progress</CardTitle>
-            <CardDescription>Tickets being worked on</CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">
@@ -131,11 +179,9 @@ export default function AgentDashboard() {
             </p>
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader>
-            <CardTitle>Resolved</CardTitle>
-            <CardDescription>Completed tickets</CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Resolved</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">
@@ -145,10 +191,10 @@ export default function AgentDashboard() {
         </Card>
       </div>
 
+      {/* Recent Tickets Table */}
       <Card>
         <CardHeader>
           <CardTitle>Recent Tickets</CardTitle>
-          <CardDescription>Latest support requests</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -159,6 +205,7 @@ export default function AgentDashboard() {
                 <TableHead>Status</TableHead>
                 <TableHead>Priority</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -166,22 +213,34 @@ export default function AgentDashboard() {
                 <TableRow
                   key={ticket.id}
                   className="cursor-pointer hover:bg-gray-50"
-                  onClick={() => setLocation(`/agent/tickets/${ticket.id}`)}
+                  onClick={() => handleRowClick(ticket.id)}
                 >
-                  <TableCell>{ticket.title}</TableCell>
-                  <TableCell>{ticket.customer.email}</TableCell>
+                  <TableCell className="font-medium">{ticket.title}</TableCell>
+                  <TableCell>{ticket.customer?.email}</TableCell>
                   <TableCell>
-                    <Badge className={getStatusBadgeColor(ticket.status)}>
-                      {ticket.status}
+                    <Badge variant="secondary" className={statusColors[ticket.status]}>
+                      {ticket.status.replace('_', ' ')}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getPriorityBadgeColor(ticket.priority)}>
+                    <Badge variant="secondary" className={priorityColors[ticket.priority]}>
                       {ticket.priority}
                     </Badge>
                   </TableCell>
+                  <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    {new Date(ticket.created_at).toLocaleDateString()}
+                    {ticket.assigned_to?.email || (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAssignToMe(e, ticket.id);
+                        }}
+                      >
+                        Assign to me
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

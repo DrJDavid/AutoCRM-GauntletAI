@@ -41,6 +41,10 @@ interface UseTicketReturn {
    */
   updateDetails: (details: { title?: string; description?: string }) => Promise<void>;
   /**
+   * Assign the ticket to an agent
+   */
+  assignTicket: (agentId: string | null) => Promise<void>;
+  /**
    * Refresh the ticket data
    */
   refresh: () => Promise<void>;
@@ -222,6 +226,27 @@ export function useTicket(ticketId: string, options: UseTicketOptions = {}): Use
     await fetchTicket();
   };
 
+  const assignTicket = async (agentId: string | null) => {
+    if (!ticket || !currentUser) {
+      console.error('Cannot assign ticket: ticket or user not found', { ticket, currentUser });
+      throw new Error('Cannot assign ticket: ticket or user not found');
+    }
+
+    console.log('Assigning ticket:', { ticketId, agentId });
+    const { error } = await supabase
+      .from('tickets')
+      .update({ assigned_agent_id: agentId })
+      .eq('id', ticketId);
+
+    if (error) {
+      console.error('Error assigning ticket:', { error, ticketId, agentId });
+      throw error;
+    }
+
+    console.log('Successfully assigned ticket:', ticketId);
+    await fetchTicket();
+  };
+
   return {
     ticket,
     loading,
@@ -230,6 +255,7 @@ export function useTicket(ticketId: string, options: UseTicketOptions = {}): Use
     updatePriority,
     updateCategory,
     updateDetails,
+    assignTicket,
     refresh: fetchTicket,
   };
 }

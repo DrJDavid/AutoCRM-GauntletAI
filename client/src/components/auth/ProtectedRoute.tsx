@@ -48,7 +48,12 @@ export function ProtectedRoute({ children, allowedRoles }: Props) {
   }
 
   // Check role-based access
-  if (allowedRoles && !allowedRoles.includes(currentUser.role as UserRole)) {
+  if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
+    console.log('Unauthorized access attempt:', {
+      userRole: currentUser.role,
+      allowedRoles,
+      path: location
+    });
     return <Redirect to="/unauthorized" />;
   }
 

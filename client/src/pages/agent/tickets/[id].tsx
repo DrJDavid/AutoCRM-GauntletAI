@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'wouter';
-import { Loader2, Clock, AlertCircle, CheckCircle2, Pencil, Upload, ChevronLeft } from 'lucide-react';
+import { Loader2, Clock, AlertCircle, CheckCircle2, Pencil, Upload, ChevronLeft, UserPlus, UserMinus } from 'lucide-react';
 import { useUserStore } from '@/stores/userStore';
 import { useTicket } from '@/hooks/useTicket';
 import { Button } from '@/components/ui/button';
@@ -62,6 +62,7 @@ export function AgentTicketDetailsPage() {
     updateStatus,
     updatePriority,
     updateCategory,
+    assignTicket,
   } = useTicket(id!, { realtime: true });
 
   const form = useForm<EditTicketFormValues>({
@@ -172,7 +173,7 @@ export function AgentTicketDetailsPage() {
           <Button
             variant="ghost"
             className="mb-2"
-            onClick={() => setLocation('/agent/dashboard')}
+            onClick={() => setLocation('/agent')}
           >
             <ChevronLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
@@ -274,6 +275,74 @@ export function AgentTicketDetailsPage() {
             )}
           </Card>
         </div>
+
+        {/* Assignment Card */}
+        <Card className="p-4">
+          <h3 className="font-semibold mb-2">Assignment</h3>
+          <div className="flex items-center justify-between">
+            <div>
+              {ticket.assigned_agent ? (
+                <div className="text-sm text-gray-600">
+                  Assigned to: {ticket.assigned_agent.email}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-600">
+                  Not assigned
+                </div>
+              )}
+            </div>
+            <div>
+              {ticket.assigned_agent_id === currentUser?.id && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      await assignTicket(null);
+                      toast({
+                        title: 'Success',
+                        description: 'Ticket unassigned successfully',
+                      });
+                    } catch (error) {
+                      toast({
+                        title: 'Error',
+                        description: 'Failed to unassign ticket',
+                        variant: 'destructive',
+                      });
+                    }
+                  }}
+                >
+                  <UserMinus className="h-4 w-4 mr-2" />
+                  Unassign
+                </Button>
+              )}
+              {!ticket.assigned_agent_id && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      await assignTicket(currentUser?.id || null);
+                      toast({
+                        title: 'Success',
+                        description: 'Ticket assigned to you successfully',
+                      });
+                    } catch (error) {
+                      toast({
+                        title: 'Error',
+                        description: 'Failed to assign ticket',
+                        variant: 'destructive',
+                      });
+                    }
+                  }}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Assign to me
+                </Button>
+              )}
+            </div>
+          </div>
+        </Card>
 
         {/* Save/Cancel buttons when editing */}
         {isEditing && (

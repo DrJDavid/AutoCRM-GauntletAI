@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,31 +10,67 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useUserStore } from "@/stores/userStore";
 import { useTicketStore } from "@/stores/ticketStore";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabaseClient";
+import type { Profile } from "@/types";
 
-export default function AdminTickets() {
+export default function AdminQueue() {
   const [location, setLocation] = useLocation();
   const { currentUser } = useUserStore();
   const { tickets, isLoading, error, fetchTickets } = useTicketStore();
+  const [agents, setAgents] = useState<Profile[]>([]);
+  const [loadingAgents, setLoadingAgents] = useState(true);
 
   useEffect(() => {
     if (currentUser?.organization_id) {
       fetchTickets();
+      fetchAgents();
     }
   }, [currentUser?.organization_id, fetchTickets]);
 
-  const handleAssignToMe = async (e: React.MouseEvent, ticketId: string) => {
+  const fetchAgents = async () => {
+    if (!currentUser?.organization_id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('organization_id', currentUser.organization_id)
+        .in('role', ['admin', 'agent'])
+        .order('role');
+
+      if (error) throw error;
+
+      setAgents(data || []);
+    } catch (err) {
+      console.error('Error fetching agents:', err);
+      toast({
+        title: "Error",
+        description: "Failed to load agents",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingAgents(false);
+    }
+  };
+
+  const handleAssignTicket = async (e: React.MouseEvent, ticketId: string, agentId: string) => {
     e.stopPropagation();
-    if (!currentUser?.id) return;
 
     try {
       const { error } = await supabase
         .from('tickets')
-        .update({ assigned_agent_id: currentUser.id })
+        .update({ assigned_agent_id: agentId })
         .eq('id', ticketId);
 
       if (error) throw error;
@@ -45,7 +80,6 @@ export default function AdminTickets() {
         description: "Ticket assigned successfully",
       });
 
-      // Refresh tickets
       fetchTickets();
     } catch (error) {
       console.error('Error assigning ticket:', error);
@@ -57,7 +91,20 @@ export default function AdminTickets() {
     }
   };
 
-  if (isLoading) {
+  // Filter only open and in_progress tickets
+  const queueTickets = tickets.filter(ticket => 
+    ['open', 'in_progress'].includes(ticket.status)
+  ).sort((a, b) => {
+    // Sort by urgency first
+    const priorityOrder = { high: 3, medium: 2, low: 1 };
+    const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+    if (priorityDiff !== 0) return priorityDiff;
+    
+    // Then by creation date (newest first)
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  if (isLoading || loadingAgents) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -69,7 +116,7 @@ export default function AdminTickets() {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <h3 className="font-semibold">Error Loading Tickets</h3>
+          <h3 className="font-semibold">Error Loading Queue</h3>
           <p className="text-sm text-muted-foreground">{error.message}</p>
         </div>
       </div>
@@ -79,8 +126,12 @@ export default function AdminTickets() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">All Tickets</h1>
-        <Button onClick={() => setLocation("/admin/tickets/new")}>Create Ticket</Button>
+        <div>
+          <h1 className="text-3xl font-bold">Ticket Queue</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage and assign open tickets
+          </p>
+        </div>
       </div>
 
       <div className="rounded-md border">
@@ -98,7 +149,7 @@ export default function AdminTickets() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tickets.map((ticket) => (
+            {queueTickets.map((ticket) => (
               <TableRow
                 key={ticket.id}
                 className="cursor-pointer"
@@ -134,15 +185,26 @@ export default function AdminTickets() {
                 </TableCell>
                 <TableCell>{ticket.customer?.email || "Unknown"}</TableCell>
                 <TableCell>
-                  {ticket.assigned_to?.email || (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => handleAssignToMe(e, ticket.id)}
-                    >
-                      Assign to me
-                    </Button>
-                  )}
+                  <Select
+                    defaultValue={ticket.assigned_agent_id || ""}
+                    onValueChange={(value) => handleAssignTicket(
+                      new MouseEvent('click') as any, 
+                      ticket.id, 
+                      value
+                    )}
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Assign to..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Unassigned</SelectItem>
+                      {agents.map((agent) => (
+                        <SelectItem key={agent.id} value={agent.id}>
+                          {agent.email} ({agent.role})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </TableCell>
                 <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
                 <TableCell>

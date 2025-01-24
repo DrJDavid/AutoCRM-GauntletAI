@@ -12,7 +12,6 @@ import { Footer } from '@/components/layout/Footer';
 import { PortalLayout } from '@/components/layout/PortalLayout';
 import { AgentLayout } from '@/components/layout/AgentLayout';
 import { InviteManagement } from '@/components/InviteManagement';
-import AgentDashboard from '@/pages/agent/dashboard';
 import { useTicketStore } from '@/stores/ticketStore';
 
 // Auth Pages
@@ -43,7 +42,6 @@ type UserRole = Profile['role'];
 // Placeholder Components
 const OrganizationInvite = () => <div>Organization Invite Page</div>;
 const OrganizationSettings = () => <div>Organization Settings Page</div>;
-const AdminDashboard = () => <div>Admin Dashboard</div>;
 const TicketList = () => <div>Ticket List</div>;
 const TicketDetail = () => <div>Ticket Detail</div>;
 
@@ -58,6 +56,7 @@ import CustomerInvite from '@/pages/org/CustomerInvite';
 import AgentInvite from '@/pages/org/AgentInvite';
 
 // Admin Pages
+import AdminDashboard from '@/pages/admin/Dashboard';
 import AdminTickets from '@/pages/admin/tickets';
 import AdminAnalytics from '@/pages/admin/analytics';
 import AdminSettings from '@/pages/admin/settings';
@@ -67,6 +66,9 @@ import ManageAgents from '@/pages/admin/manage-agents';
 
 // Layouts
 import AdminLayout from '@/components/layout/AdminLayout';
+import AgentDashboard from '@/pages/agent/dashboard';
+import AgentAssigned from '@/pages/agent/assigned';
+import AgentQueue from '@/pages/agent/queue';
 import { AgentTicketDetailsPage } from '@/pages/agent/tickets/[id]';
 
 // Protected route wrapper
@@ -84,6 +86,11 @@ function App() {
   const checkAuth = useUserStore((state) => state.checkAuth);
   const { setupTicketSubscription, cleanup } = useTicketStore();
   const currentUser = useUserStore((state) => state.currentUser);
+
+  useEffect(() => {
+    // Initial auth check
+    useUserStore.getState().checkAuth();
+  }, []);
 
   useEffect(() => {
     // Initial auth check only if we don't have a user
@@ -197,8 +204,23 @@ function App() {
           </Route>
 
           {/* Admin Routes */}
-          <Route path="/admin/tickets">
+          <Route path="/admin">
             <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout>
+                <AdminDashboard />
+              </AdminLayout>
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/admin/dashboard">
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout>
+                <AdminDashboard />
+              </AdminLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/admin/tickets">
+            <ProtectedRoute allowedRoles={['admin', 'agent']}>
               <AdminLayout>
                 <AdminTickets />
               </AdminLayout>
@@ -240,7 +262,15 @@ function App() {
             </ProtectedRoute>
           </Route>
 
-          {/* Agent Dashboard */}
+          {/* Agent Routes */}
+          <Route path="/agent">
+            <ProtectedRoute allowedRoles={['agent']}>
+              <AgentLayout>
+                <AgentDashboard />
+              </AgentLayout>
+            </ProtectedRoute>
+          </Route>
+
           <Route path="/agent/dashboard">
             <ProtectedRoute allowedRoles={['agent']}>
               <AgentLayout>
@@ -249,7 +279,22 @@ function App() {
             </ProtectedRoute>
           </Route>
 
-          {/* Agent Ticket Detail */}
+          <Route path="/agent/assigned">
+            <ProtectedRoute allowedRoles={['agent']}>
+              <AgentLayout>
+                <AgentAssigned />
+              </AgentLayout>
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/agent/queue">
+            <ProtectedRoute allowedRoles={['agent']}>
+              <AgentLayout>
+                <AgentQueue />
+              </AgentLayout>
+            </ProtectedRoute>
+          </Route>
+
           <Route path="/agent/tickets/:id">
             <ProtectedRoute allowedRoles={['agent']}>
               <AgentLayout>

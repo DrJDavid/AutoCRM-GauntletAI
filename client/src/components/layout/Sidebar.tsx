@@ -75,12 +75,6 @@ const navigation: NavigationItem[] = [
     roles: ['admin']
   },
   { 
-    name: 'Invite Customers', 
-    href: '/admin/invite-customers', 
-    icon: UserPlus,
-    roles: ['admin', 'agent']
-  },
-  { 
     name: 'User Management', 
     href: '/admin/users', 
     icon: Users,
@@ -101,20 +95,20 @@ const navigation: NavigationItem[] = [
 
   // Agent Navigation
   { 
-    name: 'Agent Dashboard', 
-    href: '/agent/dashboard', 
+    name: 'Dashboard', 
+    href: '/agent', 
     icon: LayoutDashboard,
     roles: ['agent']
   },
   { 
-    name: 'Ticket Queue', 
-    href: '/agent/tickets/queue', 
+    name: 'My Assigned', 
+    href: '/agent/assigned', 
     icon: InboxIcon,
     roles: ['agent']
   },
   { 
-    name: 'My Assigned', 
-    href: '/agent/tickets/my-tickets', 
+    name: 'Ticket Queue', 
+    href: '/agent/queue', 
     icon: List,
     roles: ['agent']
   },
