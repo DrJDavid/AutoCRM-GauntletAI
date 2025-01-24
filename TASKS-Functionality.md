@@ -10,14 +10,20 @@
   - [x] Basic status display
   - [x] Ticket Details View (/portal/tickets/[id])
     - [x] View full ticket information
-    - [ ] Download attachments
+    - [x] View attachments in-page
+    - [x] Download attachments
     - [x] View ticket history
     - [ ] Edit ticket details
     - [ ] Update ticket status
+    - [ ] File management
+      - [ ] Delete attachments
+      - [ ] Rename files
+      - [ ] Move files
+      - [ ] Categories/tags
   - [x] Add comments/replies
     - [x] Basic text messages
     - [ ] Rich text editor
-    - [ ] File attachments
+    - [ ] File attachments in comments
     - [ ] @mentions
     - [ ] Email notifications
   - [x] Real-time updates with Supabase Realtime

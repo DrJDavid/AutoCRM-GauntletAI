@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabaseClient";
 import type { Ticket } from "@/types/database";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { useLocation } from 'wouter';
+import { Badge } from "@/components/ui/badge";
 
 /**
  * CustomerPortal component serves as the main dashboard for customers
@@ -87,6 +88,27 @@ export default function CustomerPortal() {
   const handleTicketClick = (ticketId: string) => {
     setLocation(`/portal/tickets/${ticketId}`);
   };
+
+  const statusColors = {
+    open: 'bg-green-500/10 text-green-500',
+    in_progress: 'bg-yellow-500/10 text-yellow-500',
+    resolved: 'bg-blue-500/10 text-blue-500',
+    closed: 'bg-gray-500/10 text-gray-500',
+  } as const;
+
+  const priorityColors = {
+    low: 'bg-blue-500/10 text-blue-500',
+    medium: 'bg-yellow-500/10 text-yellow-500',
+    high: 'bg-orange-500/10 text-orange-500',
+    urgent: 'bg-red-500/10 text-red-500',
+  } as const;
+
+  const categoryColors = {
+    account: 'bg-purple-500/10 text-purple-500',
+    billing: 'bg-emerald-500/10 text-emerald-500',
+    technical_issue: 'bg-cyan-500/10 text-cyan-500',
+    other: 'bg-gray-500/10 text-gray-500',
+  } as const;
 
   if (isLoading) {
     return (
@@ -200,18 +222,26 @@ export default function CustomerPortal() {
                         Created on {new Date(ticket.created_at).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className={`px-2 py-1 rounded-full text-sm ${
-                      ticket.status === 'open' ? 'bg-blue-100 text-blue-800' :
-                      ticket.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {ticket.status.replace('_', ' ')}
+                    <div className="flex flex-col gap-2 items-end">
+                      <div className="flex gap-2">
+                        <Badge variant="secondary" className={priorityColors[ticket.priority]}>
+                          {ticket.priority}
+                        </Badge>
+                        <Badge variant="secondary" className={statusColors[ticket.status]}>
+                          {ticket.status.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                      <Badge variant="secondary" className={categoryColors[ticket.category]}>
+                        {ticket.category.replace('_', ' ')}
+                      </Badge>
                     </div>
                   </div>
+                  {ticket.description && (
+                    <p className="text-gray-600 mt-2 line-clamp-2">
+                      {ticket.description}
+                    </p>
+                  )}
                 </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 line-clamp-2">{ticket.description}</p>
-                </CardContent>
               </Card>
             ))}
 

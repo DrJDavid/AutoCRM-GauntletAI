@@ -25,6 +25,20 @@ export default function TicketDetailPage() {
     }
   }, [params?.id, tickets, setSelectedTicket]);
 
+  const handleStatusChange = (newStatus: string) => {
+    if (selectedTicket) {
+      // Update the local state
+      setSelectedTicket({
+        ...selectedTicket,
+        status: newStatus,
+        updatedAt: new Date().toISOString()
+      });
+      
+      // Refresh tickets to get the latest data
+      fetchTickets();
+    }
+  };
+
   if (!selectedTicket) {
     return <div>Loading...</div>;
   }
@@ -65,6 +79,7 @@ export default function TicketDetailPage() {
       <TicketDetail
         ticket={selectedTicket}
         messages={messages}
+        onStatusChange={handleStatusChange}
       />
     </div>
   );

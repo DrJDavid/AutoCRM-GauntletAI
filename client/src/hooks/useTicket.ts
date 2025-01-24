@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useUserStore } from '@/stores/userStore';
-import type { Ticket, TicketStatus, TicketPriority, TicketCategory } from '@/db/types/database';
+import type { Ticket, TicketStatus, TicketPriority, TicketCategory } from '@/types/database';
 
 interface UseTicketOptions {
   /**
@@ -65,7 +65,20 @@ export function useTicket(ticketId: string, options: UseTicketOptions = {}): Use
 
       const { data, error } = await supabase
         .from('tickets')
-        .select('*, customer:customer_id(*), assigned_agent:assigned_agent_id(*), attachments(*)')
+        .select(`
+          *,
+          customer:customer_id (
+            id,
+            email,
+            full_name
+          ),
+          assigned_agent:assigned_agent_id (
+            id,
+            email,
+            full_name
+          ),
+          attachments (*)
+        `)
         .eq('id', ticketId)
         .single();
 
@@ -73,12 +86,18 @@ export function useTicket(ticketId: string, options: UseTicketOptions = {}): Use
       if (!data) throw new Error('Ticket not found');
 
       // Check if user has access to this ticket
-      if (data.customer_id !== currentUser?.id && data.organization_id !== currentUser?.organization_id) {
+      const hasAccess = 
+        currentUser?.id === data.customer_id || // Customer owns the ticket
+        (currentUser?.role === 'agent' && currentUser?.organization_id === data.organization_id) || // Agent in same org
+        (currentUser?.role === 'admin' && currentUser?.organization_id === data.organization_id); // Admin in same org
+
+      if (!hasAccess) {
         throw new Error('You do not have access to this ticket');
       }
 
       setTicket(data);
     } catch (err) {
+      console.error('Error fetching ticket:', err);
       setError(err instanceof Error ? err : new Error('Failed to fetch ticket'));
     } finally {
       setLoading(false);
@@ -99,12 +118,8 @@ export function useTicket(ticketId: string, options: UseTicketOptions = {}): Use
           table: 'tickets',
           filter: `id=eq.${ticketId}`,
         },
-        (payload) => {
-          if (payload.eventType === 'DELETE') {
-            setTicket(null);
-          } else {
-            fetchTicket();
-          }
+        () => {
+          fetchTicket();
         }
       )
       .subscribe();
@@ -112,80 +127,99 @@ export function useTicket(ticketId: string, options: UseTicketOptions = {}): Use
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [ticketId, currentUser, options.realtime]);
+  }, [ticketId, options.realtime, currentUser]);
 
   // Initial fetch
   useEffect(() => {
-    if (!ticketId || !currentUser) return;
-    fetchTicket();
-  }, [ticketId, currentUser]);
+    if (ticketId) {
+      fetchTicket();
+    }
+  }, [ticketId]);
 
   const updateStatus = async (status: TicketStatus) => {
-    if (!ticket || !currentUser) return;
-
-    try {
-      const { error } = await supabase
-        .from('tickets')
-        .update({ status })
-        .eq('id', ticket.id)
-        .eq('organization_id', currentUser.organization_id);
-
-      if (error) throw error;
-      await fetchTicket();
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to update status');
+    if (!ticket || !currentUser) {
+      console.error('Cannot update status: ticket or user not found', { ticket, currentUser });
+      throw new Error('Cannot update status: ticket or user not found');
     }
+
+    console.log('Updating ticket status:', { ticketId, oldStatus: ticket.status, newStatus: status });
+    const { data, error } = await supabase
+      .from('tickets')
+      .update({ status })
+      .eq('id', ticketId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating ticket status:', { error, ticketId, status });
+      throw error;
+    }
+
+    console.log('Successfully updated ticket status:', data);
+    await fetchTicket();
   };
 
   const updatePriority = async (priority: TicketPriority) => {
-    if (!ticket || !currentUser) return;
-
-    try {
-      const { error } = await supabase
-        .from('tickets')
-        .update({ priority })
-        .eq('id', ticket.id)
-        .eq('organization_id', currentUser.organization_id);
-
-      if (error) throw error;
-      await fetchTicket();
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to update priority');
+    if (!ticket || !currentUser) {
+      console.error('Cannot update priority: ticket or user not found', { ticket, currentUser });
+      throw new Error('Cannot update priority: ticket or user not found');
     }
+
+    console.log('Updating ticket priority:', { ticketId, oldPriority: ticket.priority, newPriority: priority });
+    const { data, error } = await supabase
+      .from('tickets')
+      .update({ priority })
+      .eq('id', ticketId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating ticket priority:', { error, ticketId, priority });
+      throw error;
+    }
+
+    console.log('Successfully updated ticket priority:', data);
+    await fetchTicket();
   };
 
   const updateCategory = async (category: TicketCategory) => {
-    if (!ticket || !currentUser) return;
-
-    try {
-      const { error } = await supabase
-        .from('tickets')
-        .update({ category })
-        .eq('id', ticket.id)
-        .eq('organization_id', currentUser.organization_id);
-
-      if (error) throw error;
-      await fetchTicket();
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to update category');
+    if (!ticket || !currentUser) {
+      console.error('Cannot update category: ticket or user not found', { ticket, currentUser });
+      throw new Error('Cannot update category: ticket or user not found');
     }
+
+    console.log('Updating ticket category:', { ticketId, oldCategory: ticket.category, newCategory: category });
+    const { data, error } = await supabase
+      .from('tickets')
+      .update({ category })
+      .eq('id', ticketId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating ticket category:', { error, ticketId, category });
+      throw error;
+    }
+
+    console.log('Successfully updated ticket category:', data);
+    await fetchTicket();
   };
 
   const updateDetails = async (details: { title?: string; description?: string }) => {
     if (!ticket || !currentUser) return;
 
-    try {
-      const { error } = await supabase
-        .from('tickets')
-        .update(details)
-        .eq('id', ticket.id)
-        .eq('organization_id', currentUser.organization_id);
-
-      if (error) throw error;
-      await fetchTicket();
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to update details');
+    // Customers can only update their own tickets
+    if (currentUser.role === 'customer' && currentUser.id !== ticket.customer_id) {
+      throw new Error('You can only update your own tickets');
     }
+
+    const { error } = await supabase
+      .from('tickets')
+      .update(details)
+      .eq('id', ticketId);
+
+    if (error) throw error;
+    await fetchTicket();
   };
 
   return {

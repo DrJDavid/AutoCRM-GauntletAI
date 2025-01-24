@@ -1,4 +1,5 @@
  import { useEffect, useState } from 'react';
+import { useLocation } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import { useUserStore } from '@/stores/userStore';
 import {
@@ -37,6 +38,7 @@ export default function AgentDashboard() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const { currentUser } = useUserStore();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     if (currentUser?.organization_id) {
@@ -161,7 +163,11 @@ export default function AgentDashboard() {
             </TableHeader>
             <TableBody>
               {tickets.map((ticket) => (
-                <TableRow key={ticket.id}>
+                <TableRow
+                  key={ticket.id}
+                  className="cursor-pointer hover:bg-gray-50"
+                  onClick={() => setLocation(`/agent/tickets/${ticket.id}`)}
+                >
                   <TableCell>{ticket.title}</TableCell>
                   <TableCell>{ticket.customer.email}</TableCell>
                   <TableCell>

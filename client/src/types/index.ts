@@ -76,6 +76,7 @@ export interface TicketListProps {
 export interface TicketDetailProps {
   ticket: Ticket;
   messages: Message[];
+  onStatusChange?: (newStatus: TicketStatus) => void;
 }
 
 export interface TicketFormProps {

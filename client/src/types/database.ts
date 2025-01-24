@@ -85,14 +85,14 @@ export interface TeamMember {
 // ==================== Ticket Types ====================
 
 /**
+ * Ticket status options
+ */
+export type TicketStatus = 'new' | 'open' | 'in_progress' | 'resolved' | 'closed' | 'on_hold' | 'cancelled';
+
+/**
  * Ticket priority levels
  */
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent'
-
-/**
- * Ticket status options
- */
-export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed'
 
 /**
  * Ticket category options

@@ -10,8 +10,10 @@ import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
 import { PortalLayout } from '@/components/layout/PortalLayout';
+import { AgentLayout } from '@/components/layout/AgentLayout';
 import { InviteManagement } from '@/components/InviteManagement';
 import AgentDashboard from '@/pages/agent/dashboard';
+import { useTicketStore } from '@/stores/ticketStore';
 
 // Auth Pages
 import Login from '@/pages/auth/Login';
@@ -35,7 +37,8 @@ import OrganizationSetup from '@/pages/org/Setup';
 import NotFound from '@/pages/not-found';
 
 // Types
-import type { UserRole } from '@/types';
+import type { Profile } from '@/types';
+type UserRole = Profile['role'];
 
 // Placeholder Components
 const OrganizationInvite = () => <div>Organization Invite Page</div>;
@@ -64,24 +67,10 @@ import ManageAgents from '@/pages/admin/manage-agents';
 
 // Layouts
 import AdminLayout from '@/components/layout/AdminLayout';
+import { AgentTicketDetailsPage } from '@/pages/agent/tickets/[id]';
 
 // Protected route wrapper
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-
-function AgentLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <div className="flex-1 flex">
-        <aside className="hidden md:block w-64">
-          <Sidebar />
-        </aside>
-        <main className="flex-1 p-6">{children}</main>
-      </div>
-      <Footer />
-    </div>
-  );
-}
 
 function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -93,13 +82,25 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
 
 function App() {
   const checkAuth = useUserStore((state) => state.checkAuth);
+  const { setupTicketSubscription, cleanup } = useTicketStore();
+  const currentUser = useUserStore((state) => state.currentUser);
 
   useEffect(() => {
     // Initial auth check only if we don't have a user
     if (!useUserStore.getState().currentUser) {
       checkAuth();
     }
+  }, [checkAuth]);
 
+  // Set up ticket subscription when user is authenticated
+  useEffect(() => {
+    if (currentUser) {
+      setupTicketSubscription();
+    }
+    return () => cleanup();
+  }, [currentUser, setupTicketSubscription, cleanup]);
+
+  useEffect(() => {
     // Set up auth state listener
     const {
       data: { subscription },
@@ -185,38 +186,17 @@ function App() {
 
           {/* Protected Organization Routes */}
           <Route path="/org/customers/invite">
-            <ProtectedRoute allowedRoles={['admin', 'agent']}>
-              <AdminLayout>
-                <CustomerInvite />
-              </AdminLayout>
+            <ProtectedRoute allowedRoles={['admin']}>
+              <CustomerInvite />
             </ProtectedRoute>
           </Route>
-
           <Route path="/org/agents/invite">
             <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout>
-                <AgentInvite />
-              </AdminLayout>
-            </ProtectedRoute>
-          </Route>
-
-          {/* Agent Dashboard */}
-          <Route path="/agent/dashboard">
-            <ProtectedRoute allowedRoles={['agent']}>
-              <AgentLayout>
-                <AgentDashboard />
-              </AgentLayout>
+              <AgentInvite />
             </ProtectedRoute>
           </Route>
 
           {/* Admin Routes */}
-          <Route path="/admin/dashboard">
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout>
-                <AdminDashboard />
-              </AdminLayout>
-            </ProtectedRoute>
-          </Route>
           <Route path="/admin/tickets">
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminLayout>
@@ -260,33 +240,25 @@ function App() {
             </ProtectedRoute>
           </Route>
 
-          {/* Protected Customer Routes */}
-          <Route path="/portal/tickets/:id" component={() => (
-            <ProtectedRoute allowedRoles={['customer']}>
-              <TicketDetail />
+          {/* Agent Dashboard */}
+          <Route path="/agent/dashboard">
+            <ProtectedRoute allowedRoles={['agent']}>
+              <AgentLayout>
+                <AgentDashboard />
+              </AgentLayout>
             </ProtectedRoute>
-          )} />
+          </Route>
 
-          {/* Invite Routes */}
-          <Route path="/invites" element={
-            <ProtectedRoute>
-              <InviteManagement />
+          {/* Agent Ticket Detail */}
+          <Route path="/agent/tickets/:id">
+            <ProtectedRoute allowedRoles={['agent']}>
+              <AgentLayout>
+                <AgentTicketDetailsPage />
+              </AgentLayout>
             </ProtectedRoute>
-          } />
+          </Route>
 
-          {/* Fallback Routes */}
-          <Route path="/unauthorized" component={() => (
-            <PublicLayout>
-              <div className="flex items-center justify-center h-screen">
-                <div className="text-center">
-                  <h1 className="text-2xl font-bold mb-2">Unauthorized Access</h1>
-                  <p className="text-gray-600">
-                    You don't have permission to access this page.
-                  </p>
-                </div>
-              </div>
-            </PublicLayout>
-          )} />
+          {/* 404 Route */}
           <Route component={NotFound} />
         </Switch>
       </div>
