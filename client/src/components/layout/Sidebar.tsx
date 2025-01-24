@@ -18,7 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import type { UserRole } from '@/types';
 
 type NavigationItem = {
@@ -53,32 +53,6 @@ const navigation: NavigationItem[] = [
     href: '/portal/kb', 
     icon: FileText,
     roles: ['customer']
-  },
-
-  // Agent Navigation
-  { 
-    name: 'Agent Dashboard', 
-    href: '/agent/dashboard', 
-    icon: LayoutDashboard,
-    roles: ['agent']
-  },
-  { 
-    name: 'Ticket Queue', 
-    href: '/agent/tickets/queue', 
-    icon: InboxIcon,
-    roles: ['agent']
-  },
-  { 
-    name: 'My Assigned', 
-    href: '/agent/tickets/my-tickets', 
-    icon: List,
-    roles: ['agent']
-  },
-  { 
-    name: 'Knowledge Base', 
-    href: '/agent/kb/articles', 
-    icon: FileText,
-    roles: ['agent']
   },
 
   // Admin Navigation
@@ -125,6 +99,32 @@ const navigation: NavigationItem[] = [
     roles: ['admin'],
   },
 
+  // Agent Navigation
+  { 
+    name: 'Agent Dashboard', 
+    href: '/agent/dashboard', 
+    icon: LayoutDashboard,
+    roles: ['agent']
+  },
+  { 
+    name: 'Ticket Queue', 
+    href: '/agent/tickets/queue', 
+    icon: InboxIcon,
+    roles: ['agent']
+  },
+  { 
+    name: 'My Assigned', 
+    href: '/agent/tickets/my-tickets', 
+    icon: List,
+    roles: ['agent']
+  },
+  { 
+    name: 'Knowledge Base', 
+    href: '/agent/kb/articles', 
+    icon: FileText,
+    roles: ['agent']
+  },
+
   // Common Navigation
   { 
     name: 'Help', 
@@ -135,20 +135,20 @@ const navigation: NavigationItem[] = [
 ];
 
 export function Sidebar() {
-  const { currentUser, signOut } = useUserStore();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+  const { currentUser, logout } = useUserStore();
   const { toast } = useToast();
 
   if (!currentUser) return null;
 
   const userNavigation = navigation.filter(item => 
-    item.roles.includes(currentUser.role)
+    item.roles.includes(currentUser.role as UserRole)
   );
 
   const handleLogout = async () => {
     try {
-      await signOut();
-      // Navigation is now handled by the store
+      await logout();
+      setLocation('/');
     } catch (error) {
       console.error('Logout failed:', error);
       toast({
@@ -163,25 +163,26 @@ export function Sidebar() {
     <div className="flex flex-col h-full border-r bg-gray-50/40">
       <ScrollArea className="flex-1 p-4">
         <nav className="flex flex-col gap-1">
-          {userNavigation.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-            >
-              <Button
-                variant="ghost"
-                className={cn(
-                  'w-full justify-start gap-2',
-                  window.location.pathname === item.href && 'bg-gray-100'
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.name}
-              </Button>
-            </Link>
-          ))}
+          {userNavigation.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link key={item.href} href={item.href}>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-start gap-2",
+                    location === item.href && "bg-gray-100"
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.name}
+                </Button>
+              </Link>
+            );
+          })}
         </nav>
       </ScrollArea>
+
       <div className="p-4 border-t">
         <Button
           variant="ghost"

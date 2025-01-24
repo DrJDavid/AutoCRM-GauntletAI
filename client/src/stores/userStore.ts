@@ -1,5 +1,8 @@
 import { create } from 'zustand';
-import { supabase, getUserProfile, verifyOrganizationAccess } from '@/lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
+import type { Database } from '@/types/database';
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 interface AuthCredentials {
   type: 'team' | 'customer';
@@ -8,19 +11,8 @@ interface AuthCredentials {
   organizationSlug?: string;
 }
 
-interface User {
-  id: string;
-  email: string;
-  role: 'admin' | 'agent' | 'customer';
-  organization?: {
-    id: string;
-    name: string;
-    slug: string;
-  };
-}
-
 interface UserState {
-  currentUser: User | null;
+  currentUser: Profile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: Error | null;
@@ -28,24 +20,21 @@ interface UserState {
   signUp: (email: string, password: string, role: string, organizationId?: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
-  signOut: () => Promise<void>;
 }
 
-export const useUserStore = create<UserState>((set, get) => ({
+export const useUserStore = create<UserState>()((set) => ({
   currentUser: null,
   isAuthenticated: false,
-  isLoading: true,
+  isLoading: false,
   error: null,
 
   checkAuth: async () => {
     try {
-      set({ isLoading: true });
+      set({ isLoading: true, error: null });
       
-      // Get the current session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) throw sessionError;
 
-      // If no session, clear state and return
       if (!session) {
         set({ 
           currentUser: null, 
@@ -56,41 +45,19 @@ export const useUserStore = create<UserState>((set, get) => ({
         return;
       }
 
-      // Get user profile
-      const profile = await getUserProfile(session.user.id);
-      
-      set({
-        currentUser: {
-          id: session.user.id,
-          email: session.user.email!,
-          role: profile.role,
-          organization: profile.organizations,
-        },
-        isAuthenticated: true,
-        error: null
-      });
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
 
-      // Setup auth state change listener
-      supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_OUT') {
-          set({ 
-            currentUser: null, 
-            isAuthenticated: false,
-            error: null 
-          });
-        } else if (event === 'SIGNED_IN' && session) {
-          const profile = await getUserProfile(session.user.id);
-          set({
-            currentUser: {
-              id: session.user.id,
-              email: session.user.email!,
-              role: profile.role,
-              organization: profile.organizations,
-            },
-            isAuthenticated: true,
-            error: null
-          });
-        }
+      if (profileError) throw profileError;
+
+      set({
+        currentUser: profile,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null
       });
 
     } catch (error) {
@@ -98,58 +65,47 @@ export const useUserStore = create<UserState>((set, get) => ({
       set({ 
         currentUser: null, 
         isAuthenticated: false,
-        error: error as Error 
+        isLoading: false,
+        error: error instanceof Error ? error : new Error('Authentication failed') 
       });
-    } finally {
-      set({ isLoading: false });
     }
   },
 
-  login: async ({ type, email, password, organizationSlug }: AuthCredentials) => {
+  login: async ({ email, password }: AuthCredentials) => {
     try {
       set({ isLoading: true, error: null });
 
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data: { session }, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
+      if (!session) throw new Error('No session after login');
 
-      if (data.user) {
-        const profile = await getUserProfile(data.user.id);
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
 
-        set({
-          currentUser: {
-            id: data.user.id,
-            email: data.user.email!,
-            role: profile.role,
-            organization: profile.organizations,
-          },
-          isAuthenticated: true,
-          error: null
-        });
+      if (profileError) throw profileError;
 
-        // Redirect based on role
-        const role = profile.role;
-        if (role === 'admin') {
-          window.location.href = '/admin/dashboard';
-        } else if (role === 'agent') {
-          window.location.href = '/agent/dashboard';
-        } else {
-          window.location.href = '/portal';
-        }
-      }
+      set({
+        currentUser: profile,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null
+      });
     } catch (error) {
       console.error('Login failed:', error);
-      set({ 
-        error: error as Error,
+      set({
+        currentUser: null,
         isAuthenticated: false,
-        currentUser: null
+        isLoading: false,
+        error: error instanceof Error ? error : new Error('Login failed')
       });
       throw error;
-    } finally {
-      set({ isLoading: false });
     }
   },
 
@@ -157,118 +113,68 @@ export const useUserStore = create<UserState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
 
-      // Clean the email
-      const cleanEmail = email.trim().toLowerCase();
-      console.log('Attempting signup with cleaned email:', cleanEmail);
-
-      // First check if user exists
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', cleanEmail)
-        .single();
-
-      if (existingUser) {
-        throw new Error('An account with this email already exists');
-      }
-
-      if (!organizationId) {
-        throw new Error('Organization ID is required for registration');
-      }
-
-      // Sign up the user
-      const { data, error } = await supabase.auth.signUp({
-        email: cleanEmail,
+      const { data: { session }, error: signUpError } = await supabase.auth.signUp({
+        email,
         password,
-        options: {
-          data: {
-            role,
-            organization_id: organizationId,
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback`
-        },
       });
 
-      if (error) {
-        console.error('Signup error:', error);
-        throw error;
-      }
-      if (!data.user) throw new Error('Failed to create user account');
-
-      console.log('User created successfully:', data.user);
-
-      // Create profile with organization_id
-      const profileData = {
-        id: data.user.id,
-        email: cleanEmail,
-        role,
-        organization_id: organizationId, // Ensure this is set
-      };
-
-      console.log('Creating profile with data:', profileData);
+      if (signUpError) throw signUpError;
+      if (!session) throw new Error('No session after signup');
 
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert([profileData]);
+        .insert([
+          {
+            id: session.user.id,
+            email,
+            role,
+            organization_id: organizationId,
+          },
+        ]);
 
-      if (profileError) {
-        console.error('Failed to create profile:', profileError);
-        throw new Error('Failed to create user profile');
-      }
+      if (profileError) throw profileError;
 
-      console.log('Profile created successfully');
+      const { data: profile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
 
-      // Set the user state
+      if (fetchError) throw fetchError;
+
       set({
+        currentUser: profile,
+        isAuthenticated: true,
         isLoading: false,
-        error: null,
-        currentUser: {
-          id: data.user.id,
-          email: cleanEmail,
-          role,
-          organization: {
-            id: organizationId,
-            name: '', // We can fetch this later if needed
-            slug: ''  // We can fetch this later if needed
-          }
-        },
-        isAuthenticated: true
+        error: null
       });
-
     } catch (error) {
-      console.error('Registration failed:', error);
-      set({ error: error as Error });
-      throw error;
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  signOut: async () => {
-    try {
-      set({ isLoading: true });
-      
-      // First clear the auth state
+      console.error('Signup failed:', error);
       set({
         currentUser: null,
         isAuthenticated: false,
-        error: null
+        isLoading: false,
+        error: error instanceof Error ? error : new Error('Signup failed')
       });
+      throw error;
+    }
+  },
 
-      // Then sign out from Supabase
+  logout: async () => {
+    try {
+      // Clear the store state first
+      set({ currentUser: null, error: null });
+      
+      // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
 
-      // Clear any persisted state
-      localStorage.removeItem('supabase.auth.token');
-      
-      // Redirect to home
-      window.location.href = '/';
     } catch (error) {
-      console.error('Sign out failed:', error);
+      console.error('Logout failed:', error);
+      set({
+        error: error instanceof Error ? error : new Error('Logout failed')
+      });
       throw error;
-    } finally {
-      set({ isLoading: false });
     }
   },
 }));

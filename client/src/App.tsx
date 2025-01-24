@@ -91,180 +91,171 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const checkAuth = useUserStore(state => state.checkAuth);
+  const checkAuth = useUserStore((state) => state.checkAuth);
 
   useEffect(() => {
-    // Call checkAuth when the component mounts
     checkAuth();
-  }, []); // Empty dependency array since we only want this to run once
+  }, [checkAuth]); // Add checkAuth to dependency array
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Switch>
-        {/* Public Routes */}
-        <Route path="/" component={Landing} />
+      <div className="min-h-screen">
+        <Toaster />
+        <Switch>
+          {/* Public Routes */}
+          <Route path="/" component={Landing} />
 
-        {/* Auth Routes */}
-        <Route path="/auth/reset-password" component={ResetPassword} />
-        <Route path="/auth/reset-password/confirm" component={ResetPassword} />
+          {/* Auth Routes */}
+          <Route path="/auth/reset-password" component={ResetPassword} />
+          <Route path="/auth/reset-password/confirm" component={ResetPassword} />
 
-        {/* Organization Routes */}
-        <Route path="/org/new" component={OrganizationNew} />
-        <Route path="/org/login" component={OrganizationLogin} />
-        <Route path="/org/setup" component={OrganizationSetup} />
-        
-        {/* Team Member Routes */}
-        <Route path="/auth/team/accept-invite" component={TeamAcceptInvite} />
-        <Route path="/auth/team/login" component={TeamLogin} />
-        
-        {/* Agent Routes */}
-        <Route path="/auth/agent/login" component={AgentLogin} />
-        <Route path="/auth/agent/register" component={AgentRegister} />
-        
-        {/* Customer Routes */}
-        <Route path="/auth/customer/accept-invite" component={CustomerAcceptInvite} />
-        <Route path="/auth/customer/login" component={CustomerLogin} />
-        <Route path="/auth/customer/register" component={CustomerRegister} />
+          {/* Organization Routes */}
+          <Route path="/org/new" component={OrganizationNew} />
+          <Route path="/org/login" component={OrganizationLogin} />
+          <Route path="/org/setup" component={OrganizationSetup} />
+          
+          {/* Team Member Routes */}
+          <Route path="/auth/team/accept-invite" component={TeamAcceptInvite} />
+          <Route path="/auth/team/login" component={TeamLogin} />
+          
+          {/* Agent Routes */}
+          <Route path="/auth/agent/login" component={AgentLogin} />
+          <Route path="/auth/agent/register" component={AgentRegister} />
+          
+          {/* Customer Routes */}
+          <Route path="/auth/customer/accept-invite" component={CustomerAcceptInvite} />
+          <Route path="/auth/customer/login" component={CustomerLogin} />
+          <Route path="/auth/customer/register" component={CustomerRegister} />
 
-        {/* Customer Portal - Protected */}
-        <Route path="/portal">
-          <ProtectedRoute allowedRoles={['customer']}>
-            <PortalLayout>
+          {/* Customer Portal - Protected */}
+          <Route path="/portal">
+            <ProtectedRoute allowedRoles={['customer']}>
               <CustomerPortal />
-            </PortalLayout>
-          </ProtectedRoute>
-        </Route>
-        <Route path="/portal/tickets/:id">
-          <ProtectedRoute allowedRoles={['customer']}>
-            <PortalLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/portal/tickets/:id">
+            <ProtectedRoute allowedRoles={['customer']}>
               <TicketDetails />
-            </PortalLayout>
-          </ProtectedRoute>
-        </Route>
-        <Route path="/portal/kb">
-          <ProtectedRoute allowedRoles={['customer']}>
-            <PortalLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/portal/kb">
+            <ProtectedRoute allowedRoles={['customer']}>
               <KnowledgeBase />
-            </PortalLayout>
-          </ProtectedRoute>
-        </Route>
-        <Route path="/portal/support">
-          <ProtectedRoute allowedRoles={['customer']}>
-            <PortalLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/portal/support">
+            <ProtectedRoute allowedRoles={['customer']}>
               <Support />
-            </PortalLayout>
-          </ProtectedRoute>
-        </Route>
+            </ProtectedRoute>
+          </Route>
 
-        {/* Protected Organization Routes */}
-        <Route path="/org/customers/invite">
-          <ProtectedRoute allowedRoles={['admin', 'agent']}>
-            <AdminLayout>
-              <CustomerInvite />
-            </AdminLayout>
-          </ProtectedRoute>
-        </Route>
+          {/* Protected Organization Routes */}
+          <Route path="/org/customers/invite">
+            <ProtectedRoute allowedRoles={['admin', 'agent']}>
+              <AdminLayout>
+                <CustomerInvite />
+              </AdminLayout>
+            </ProtectedRoute>
+          </Route>
 
-        <Route path="/org/agents/invite">
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminLayout>
-              <AgentInvite />
-            </AdminLayout>
-          </ProtectedRoute>
-        </Route>
+          <Route path="/org/agents/invite">
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout>
+                <AgentInvite />
+              </AdminLayout>
+            </ProtectedRoute>
+          </Route>
 
-        {/* Agent Dashboard */}
-        <Route path="/agent/dashboard">
-          <ProtectedRoute allowedRoles={['agent']}>
-            <AgentLayout>
-              <AgentDashboard />
-            </AgentLayout>
-          </ProtectedRoute>
-        </Route>
+          {/* Agent Dashboard */}
+          <Route path="/agent/dashboard">
+            <ProtectedRoute allowedRoles={['agent']}>
+              <AgentLayout>
+                <AgentDashboard />
+              </AgentLayout>
+            </ProtectedRoute>
+          </Route>
 
-        {/* Admin Routes */}
-        <Route path="/admin/dashboard">
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminLayout>
-              <AdminDashboard />
-            </AdminLayout>
-          </ProtectedRoute>
-        </Route>
-        <Route path="/admin/tickets">
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminLayout>
-              <AdminTickets />
-            </AdminLayout>
-          </ProtectedRoute>
-        </Route>
-        <Route path="/admin/analytics">
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminLayout>
-              <AdminAnalytics />
-            </AdminLayout>
-          </ProtectedRoute>
-        </Route>
-        <Route path="/admin/settings">
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminLayout>
-              <AdminSettings />
-            </AdminLayout>
-          </ProtectedRoute>
-        </Route>
-        <Route path="/admin/users">
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminLayout>
-              <UserManagement />
-            </AdminLayout>
-          </ProtectedRoute>
-        </Route>
-        <Route path="/admin/invite-customers">
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminLayout>
-              <InviteCustomers />
-            </AdminLayout>
-          </ProtectedRoute>
-        </Route>
-        <Route path="/admin/manage-agents">
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminLayout>
-              <ManageAgents />
-            </AdminLayout>
-          </ProtectedRoute>
-        </Route>
+          {/* Admin Routes */}
+          <Route path="/admin/dashboard">
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout>
+                <AdminDashboard />
+              </AdminLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/admin/tickets">
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout>
+                <AdminTickets />
+              </AdminLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/admin/analytics">
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout>
+                <AdminAnalytics />
+              </AdminLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/admin/settings">
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout>
+                <AdminSettings />
+              </AdminLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/admin/users">
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout>
+                <UserManagement />
+              </AdminLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/admin/invite-customers">
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout>
+                <InviteCustomers />
+              </AdminLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/admin/manage-agents">
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout>
+                <ManageAgents />
+              </AdminLayout>
+            </ProtectedRoute>
+          </Route>
 
-        {/* Protected Customer Routes */}
-        <Route path="/portal/tickets/:id" component={() => (
-          <ProtectedRoute allowedRoles={['customer']}>
-            <PortalLayout>
+          {/* Protected Customer Routes */}
+          <Route path="/portal/tickets/:id" component={() => (
+            <ProtectedRoute allowedRoles={['customer']}>
               <TicketDetail />
-            </PortalLayout>
-          </ProtectedRoute>
-        )} />
+            </ProtectedRoute>
+          )} />
 
-        {/* Invite Routes */}
-        <Route path="/invites" element={
-          <ProtectedRoute>
-            <InviteManagement />
-          </ProtectedRoute>
-        } />
+          {/* Invite Routes */}
+          <Route path="/invites" element={
+            <ProtectedRoute>
+              <InviteManagement />
+            </ProtectedRoute>
+          } />
 
-        {/* Fallback Routes */}
-        <Route path="/unauthorized" component={() => (
-          <PublicLayout>
-            <div className="flex items-center justify-center h-screen">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold mb-2">Unauthorized Access</h1>
-                <p className="text-gray-600">
-                  You don't have permission to access this page.
-                </p>
+          {/* Fallback Routes */}
+          <Route path="/unauthorized" component={() => (
+            <PublicLayout>
+              <div className="flex items-center justify-center h-screen">
+                <div className="text-center">
+                  <h1 className="text-2xl font-bold mb-2">Unauthorized Access</h1>
+                  <p className="text-gray-600">
+                    You don't have permission to access this page.
+                  </p>
+                </div>
               </div>
-            </div>
-          </PublicLayout>
-        )} />
-        <Route component={NotFound} />
-      </Switch>
-      <Toaster />
+            </PublicLayout>
+          )} />
+          <Route component={NotFound} />
+        </Switch>
+      </div>
     </QueryClientProvider>
   );
 }

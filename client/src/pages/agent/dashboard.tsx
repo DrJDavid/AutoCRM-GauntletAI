@@ -39,11 +39,18 @@ export default function AgentDashboard() {
   const { currentUser } = useUserStore();
 
   useEffect(() => {
-    fetchTickets();
-  }, []);
+    if (currentUser?.organization_id) {
+      fetchTickets();
+    }
+  }, [currentUser]);
 
   const fetchTickets = async () => {
     try {
+      if (!currentUser?.organization_id) {
+        console.error('No organization ID found');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('tickets')
         .select(`
@@ -52,7 +59,7 @@ export default function AgentDashboard() {
             email
           )
         `)
-        .eq('organization_id', currentUser?.organization?.id)
+        .eq('organization_id', currentUser.organization_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -84,6 +91,10 @@ export default function AgentDashboard() {
     return colors[priority];
   };
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
@@ -100,26 +111,34 @@ export default function AgentDashboard() {
             <CardTitle>Open Tickets</CardTitle>
             <CardDescription>Active tickets requiring attention</CardDescription>
           </CardHeader>
-          <CardContent className="text-2xl font-bold">
-            {tickets.filter(t => t.status === 'open').length}
+          <CardContent>
+            <p className="text-3xl font-bold">
+              {tickets.filter(t => t.status === 'open').length}
+            </p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>In Progress</CardTitle>
-            <CardDescription>Tickets currently being worked on</CardDescription>
+            <CardDescription>Tickets being worked on</CardDescription>
           </CardHeader>
-          <CardContent className="text-2xl font-bold">
-            {tickets.filter(t => t.status === 'in_progress').length}
+          <CardContent>
+            <p className="text-3xl font-bold">
+              {tickets.filter(t => t.status === 'in_progress').length}
+            </p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader>
-            <CardTitle>Resolved Today</CardTitle>
-            <CardDescription>Tickets resolved in the last 24 hours</CardDescription>
+            <CardTitle>Resolved</CardTitle>
+            <CardDescription>Completed tickets</CardDescription>
           </CardHeader>
-          <CardContent className="text-2xl font-bold">
-            {tickets.filter(t => t.status === 'resolved').length}
+          <CardContent>
+            <p className="text-3xl font-bold">
+              {tickets.filter(t => t.status === 'resolved').length}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -127,7 +146,7 @@ export default function AgentDashboard() {
       <Card>
         <CardHeader>
           <CardTitle>Recent Tickets</CardTitle>
-          <CardDescription>Manage and respond to customer tickets</CardDescription>
+          <CardDescription>Latest support requests</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -138,42 +157,28 @@ export default function AgentDashboard() {
                 <TableHead>Status</TableHead>
                 <TableHead>Priority</TableHead>
                 <TableHead>Created</TableHead>
-                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center">Loading tickets...</TableCell>
+              {tickets.map((ticket) => (
+                <TableRow key={ticket.id}>
+                  <TableCell>{ticket.title}</TableCell>
+                  <TableCell>{ticket.customer.email}</TableCell>
+                  <TableCell>
+                    <Badge className={getStatusBadgeColor(ticket.status)}>
+                      {ticket.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getPriorityBadgeColor(ticket.priority)}>
+                      {ticket.priority}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {new Date(ticket.created_at).toLocaleDateString()}
+                  </TableCell>
                 </TableRow>
-              ) : tickets.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center">No tickets found</TableCell>
-                </TableRow>
-              ) : (
-                tickets.map((ticket) => (
-                  <TableRow key={ticket.id}>
-                    <TableCell className="font-medium">{ticket.title}</TableCell>
-                    <TableCell>{ticket.customer.email}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusBadgeColor(ticket.status)}>
-                        {ticket.status.replace('_', ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getPriorityBadgeColor(ticket.priority)}>
-                        {ticket.priority}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(ticket.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm">View</Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+              ))}
             </TableBody>
           </Table>
         </CardContent>

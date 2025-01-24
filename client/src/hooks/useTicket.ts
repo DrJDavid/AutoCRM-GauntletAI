@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useUserStore } from '@/stores/userStore';
-import type { Ticket } from '@/db/types/database';
+import type { Ticket, TicketStatus, TicketPriority, TicketCategory } from '@/db/types/database';
 
 interface UseTicketOptions {
   /**
@@ -27,15 +27,19 @@ interface UseTicketReturn {
   /**
    * Update the ticket's status
    */
-  updateStatus: (status: Ticket['status']) => Promise<void>;
+  updateStatus: (status: TicketStatus) => Promise<void>;
   /**
    * Update the ticket's priority
    */
-  updatePriority: (priority: Ticket['priority']) => Promise<void>;
+  updatePriority: (priority: TicketPriority) => Promise<void>;
+  /**
+   * Update the ticket's category
+   */
+  updateCategory: (category: TicketCategory) => Promise<void>;
   /**
    * Update the ticket's title and description
    */
-  updateDetails: (details: Pick<Ticket, 'title' | 'description'>) => Promise<void>;
+  updateDetails: (details: { title?: string; description?: string }) => Promise<void>;
   /**
    * Refresh the ticket data
    */
@@ -116,7 +120,7 @@ export function useTicket(ticketId: string, options: UseTicketOptions = {}): Use
     fetchTicket();
   }, [ticketId, currentUser]);
 
-  const updateStatus = async (status: Ticket['status']) => {
+  const updateStatus = async (status: TicketStatus) => {
     if (!ticket || !currentUser) return;
 
     try {
@@ -133,7 +137,7 @@ export function useTicket(ticketId: string, options: UseTicketOptions = {}): Use
     }
   };
 
-  const updatePriority = async (priority: Ticket['priority']) => {
+  const updatePriority = async (priority: TicketPriority) => {
     if (!ticket || !currentUser) return;
 
     try {
@@ -150,7 +154,24 @@ export function useTicket(ticketId: string, options: UseTicketOptions = {}): Use
     }
   };
 
-  const updateDetails = async (details: Pick<Ticket, 'title' | 'description'>) => {
+  const updateCategory = async (category: TicketCategory) => {
+    if (!ticket || !currentUser) return;
+
+    try {
+      const { error } = await supabase
+        .from('tickets')
+        .update({ category })
+        .eq('id', ticket.id)
+        .eq('organization_id', currentUser.organization?.id);
+
+      if (error) throw error;
+      await fetchTicket();
+    } catch (err) {
+      throw err instanceof Error ? err : new Error('Failed to update category');
+    }
+  };
+
+  const updateDetails = async (details: { title?: string; description?: string }) => {
     if (!ticket || !currentUser) return;
 
     try {
@@ -173,6 +194,7 @@ export function useTicket(ticketId: string, options: UseTicketOptions = {}): Use
     error,
     updateStatus,
     updatePriority,
+    updateCategory,
     updateDetails,
     refresh: fetchTicket,
   };

@@ -29,9 +29,22 @@ const sidebarItems: SidebarItem[] = [
   { icon: Settings, label: 'Settings', href: '/admin/settings' },
 ];
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
-  const { signOut } = useUserStore();
+interface AdminLayoutProps {
+  children: React.ReactNode;
+}
+
+export default function AdminLayout({ children }: AdminLayoutProps) {
+  const [, setLocation] = useLocation();
+  const { currentUser, logout } = useUserStore();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setLocation('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -63,8 +76,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="mt-auto pt-4 border-t border-gray-800">
           <Button 
             variant="ghost" 
-            className="w-full justify-start text-gray-400 hover:text-white"
-            onClick={() => signOut()}
+            size="sm"
+            className="w-full justify-start"
+            onClick={handleLogout}
           >
             <LogOut className="h-4 w-4 mr-3" />
             Sign Out

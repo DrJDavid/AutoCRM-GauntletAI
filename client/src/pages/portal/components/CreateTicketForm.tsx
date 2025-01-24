@@ -1,123 +1,115 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FileUpload } from '@/components/ui/file-upload';
 import { useToast } from '@/components/ui/use-toast';
+import { CreateTicketInput, createTicketSchema } from '@/schemas/ticket';
 import { useUserStore } from '@/stores/userStore';
 import { supabase } from '@/lib/supabaseClient';
-import { FileUpload } from '@/components/ui/file-upload';
 import { uploadFiles } from '@/lib/uploadFiles';
-import type { TicketPriority } from '@/db/types/database';
 
-// Schema for form validation
-const ticketSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),
-  description: z.string().min(1, 'Description is required'),
-  priority: z.enum(['low', 'medium', 'high', 'urgent'] as const),
-});
+interface CreateTicketFormProps {
+  onSuccess?: () => void;
+}
 
-type TicketFormValues = z.infer<typeof ticketSchema>;
-
-/**
- * CreateTicketForm component allows customers to create new support tickets
- * - Validates input using Zod schema
- * - Handles file attachments with drag & drop support
- * - Auto-assigns to customer's organization
- * - Shows success/error feedback
- */
-export function CreateTicketForm() {
+export function CreateTicketForm({ onSuccess }: CreateTicketFormProps) {
   const { toast } = useToast();
+  const { currentUser } = useUserStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
-  const { currentUser } = useUserStore();
 
-  const form = useForm<TicketFormValues>({
-    resolver: zodResolver(ticketSchema),
+  // Debug log current user state
+  console.log('Current user state:', { 
+    userId: currentUser?.id,
+    organizationId: currentUser?.organization_id,
+    isLoggedIn: !!currentUser
+  });
+
+  // Ensure user is logged in and has organization
+  if (!currentUser?.id || !currentUser?.organization_id) {
+    return (
+      <div className="p-4 text-center">
+        <p className="text-red-500">You must be logged in and part of an organization to create tickets.</p>
+      </div>
+    );
+  }
+
+  const form = useForm<CreateTicketInput>({
+    resolver: zodResolver(createTicketSchema),
     defaultValues: {
       title: '',
       description: '',
+      customer_id: currentUser.id,
+      organization_id: currentUser.organization_id,
+      status: 'open',
       priority: 'medium',
+      category: 'other',
+      tags: [],
+      metadata: {},
     },
   });
 
-  const onSubmit = async (values: TicketFormValues) => {
-    console.log('Form submitted with values:', values);
-    console.log('Current user:', currentUser);
+  const onSubmit = async (data: CreateTicketInput) => {
+    console.log('Form submission started with data:', data);
 
-    if (!currentUser?.id || !currentUser?.organization?.id) {
-      console.error('Missing user data:', { 
-        userId: currentUser?.id, 
-        orgId: currentUser?.organization?.id 
-      });
-      toast({
-        title: 'Error',
-        description: 'You must be logged in to create a ticket',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
     try {
-      const ticketData = {
-        title: values.title,
-        description: values.description,
-        priority: values.priority,
-        status: 'open',
-        customer_id: currentUser.id,
-        organization_id: currentUser.organization.id,
-      };
-      console.log('Creating ticket with data:', ticketData);
+      setIsSubmitting(true);
 
+      // Log the data being sent to Supabase
+      const ticketData = {
+        ...data,
+        customer_id: currentUser.id,
+        organization_id: currentUser.organization_id,
+      };
+      console.log('Sending ticket data to Supabase:', ticketData);
+      
       // Create the ticket in Supabase
       const { data: ticket, error: ticketError } = await supabase
         .from('tickets')
-        .insert(ticketData)
+        .insert([ticketData])
         .select()
         .single();
 
       if (ticketError) {
-        console.error('Error creating ticket:', ticketError);
+        console.error('Supabase ticket creation error:', ticketError);
         throw ticketError;
       }
 
-      console.log('Ticket created:', ticket);
+      console.log('Ticket created successfully:', ticket);
 
-      // Upload files if any
+      // Upload files if any were selected
       if (files.length > 0 && ticket) {
-        console.log('Uploading files:', files);
-        try {
-          const attachments = await uploadFiles({
-            files,
-            ticketId: ticket.id,
-            organizationId: currentUser.organization.id,
-            userId: currentUser.id,
-          });
-          console.log('Files uploaded:', attachments);
-        } catch (uploadError) {
-          console.error('Error uploading files:', uploadError);
-          // Continue with success message even if file upload fails
-        }
+        console.log('Starting file upload for files:', files.map(f => f.name));
+        
+        await uploadFiles({
+          files,
+          ticketId: ticket.id,
+          organizationId: currentUser.organization_id,
+          userId: currentUser.id,
+        });
+
+        console.log('Files uploaded successfully');
       }
 
       toast({
         title: 'Success',
-        description: 'Your ticket has been created successfully',
+        description: 'Your ticket has been created successfully.',
       });
 
-      // Reset form and files
       form.reset();
       setFiles([]);
+      onSuccess?.();
+
     } catch (error) {
-      console.error('Error in form submission:', error);
+      console.error('Error creating ticket:', error);
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create ticket. Please try again.',
+        description: 'There was an error creating your ticket. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -135,7 +127,7 @@ export function CreateTicketForm() {
             <FormItem>
               <FormLabel>Title</FormLabel>
               <FormControl>
-                <Input placeholder="Brief description of your issue" {...field} />
+                <Input placeholder="Brief description of the issue" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -150,7 +142,7 @@ export function CreateTicketForm() {
               <FormLabel>Description</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Please provide detailed information about your issue"
+                  placeholder="Detailed description of your issue"
                   className="min-h-[100px]"
                   {...field}
                 />
@@ -184,15 +176,42 @@ export function CreateTicketForm() {
           )}
         />
 
-        <div className="space-y-2">
-          <FormLabel>Attachments</FormLabel>
-          <FileUpload
-            onChange={setFiles}
-            maxFiles={5}
-            maxSize={5 * 1024 * 1024} // 5MB
-            disabled={isSubmitting}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="technical">Technical</SelectItem>
+                  <SelectItem value="billing">Billing</SelectItem>
+                  <SelectItem value="account">Account</SelectItem>
+                  <SelectItem value="feature">Feature Request</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FileUpload
+          value={files}
+          onChange={setFiles}
+          maxFiles={5}
+          maxSize={5 * 1024 * 1024} // 5MB
+          accept={{
+            'image/*': [],
+            'application/pdf': [],
+            'text/*': [],
+          }}
+        />
 
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Creating...' : 'Create Ticket'}

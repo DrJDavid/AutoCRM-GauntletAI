@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { useUserStore } from '@/stores/userStore';
 import {
   Bell,
@@ -20,10 +20,16 @@ import { Sidebar } from './Sidebar';
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const [, setLocation] = useLocation();
   const { currentUser, logout } = useUserStore();
 
   const handleLogout = async () => {
-    await logout();
+    try {
+      await logout();
+      setLocation('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   return (

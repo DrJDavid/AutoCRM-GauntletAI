@@ -8,18 +8,19 @@
 - [x] View Tickets
   - [x] List of customer's tickets
   - [x] Basic status display
-  - [ ] Ticket Details View (/portal/tickets/[id])
-    - [ ] View full ticket information
+  - [x] Ticket Details View (/portal/tickets/[id])
+    - [x] View full ticket information
     - [ ] Download attachments
-    - [ ] View ticket history
+    - [x] View ticket history
     - [ ] Edit ticket details
     - [ ] Update ticket status
-  - [ ] Add comments/replies
+  - [x] Add comments/replies
+    - [x] Basic text messages
     - [ ] Rich text editor
     - [ ] File attachments
     - [ ] @mentions
     - [ ] Email notifications
-  - [ ] Real-time updates with Supabase Realtime
+  - [x] Real-time updates with Supabase Realtime
   - [ ] Pagination for large ticket lists
   - [ ] Sort and filter options
     - [ ] By status
@@ -33,7 +34,17 @@
   - [ ] Related articles suggestions
   - [ ] Article feedback system
 - [ ] Support (/portal/support)
-  - [ ] Live chat or contact form
+  - [ ] Organization-specific contact info
+    - [ ] Business hours
+    - [ ] Phone numbers
+    - [ ] Email addresses
+    - [ ] Physical addresses
+  - [ ] Live chat with agents
+    - [ ] Real-time messaging
+    - [ ] Agent availability status
+    - [ ] File sharing
+    - [ ] Chat history
+    - [ ] Convert chat to ticket
   - [ ] FAQ section
   - [ ] Support hours display
   - [ ] Contact preferences
@@ -59,6 +70,12 @@
   - [ ] Link articles to tickets
   - [ ] Article versioning
   - [ ] Usage analytics
+- [ ] Live Chat Management
+  - [ ] Accept/decline chat requests
+  - [ ] Set availability status
+  - [ ] View chat history
+  - [ ] Transfer chats to other agents
+  - [ ] Canned responses
 
 ## Admin Dashboard (/admin/dashboard)
 - [ ] Overview
@@ -67,46 +84,46 @@
   - [ ] Response time analytics
   - [ ] Customer satisfaction trends
   - [ ] Knowledge base usage stats
-- [ ] Ticket Management (/admin/tickets)
-  - [ ] View all tickets
-  - [ ] Bulk actions
-  - [ ] Advanced filtering
-  - [ ] Custom ticket fields
-  - [ ] Automation rules
-- [ ] User Management
-  - [ ] Manage Agents (/admin/manage-agents)
-    - [ ] View agent workload
-    - [ ] Performance metrics
-    - [ ] Skill management
-    - [ ] Schedule management
-  - [ ] Manage Customers (/admin/users)
-    - [ ] View customer list
-    - [ ] Access customer details
-    - [ ] Customer segmentation
-    - [ ] Bulk actions
+  - [ ] Chat metrics
 - [ ] Organization Settings (/admin/settings)
+  - [ ] Business Information
+    - [ ] Company name and branding
+    - [ ] Contact information
+    - [ ] Business hours
+    - [ ] Support channels
   - [ ] Customize ticket fields
   - [ ] SLA configuration
-  - [ ] Business hours
   - [ ] Email templates
   - [ ] Automation rules
   - [ ] Integration settings
+  - [ ] Chat settings
+    - [ ] Operating hours
+    - [ ] Queue settings
+    - [ ] Auto-response messages
+    - [ ] Chat routing rules
 
 ## System Features
+- [x] Authentication
+  - [x] Customer login/register
+  - [x] Agent login/register
+  - [x] Organization management
+  - [x] Role-based access control
+- [x] Real-time Features
+  - [x] Live ticket updates
+  - [x] Message notifications
+  - [ ] Chat presence
+  - [ ] Typing indicators
 - [ ] Notifications
   - [ ] Email notifications
   - [ ] In-app notifications
   - [ ] Custom notification rules
 - [ ] Reporting
   - [ ] Ticket analytics
-  - [ ] Agent performance reports
-  - [ ] Customer satisfaction reports
-  - [ ] Custom report builder
-- [ ] Integration
-  - [ ] Email integration
-  - [ ] Slack integration
-  - [ ] API documentation
-  - [ ] Webhook support
+  - [ ] Chat analytics
+  - [ ] Agent performance
+  - [ ] Customer satisfaction
+  - [ ] Response times
+  - [ ] Knowledge base usage
 
 ## Testing & Documentation
 - [ ] Unit Tests
@@ -125,8 +142,8 @@
   - [ ] Development guide
 
 ## Next Priority Tasks
-1. Implement ticket details view
-2. Add ticket editing functionality
-3. Implement comments system
-4. Add real-time updates
-5. Implement pagination and filtering
+1. Implement ticket editing functionality
+2. Add real-time chat presence and typing indicators
+3. Implement pagination and filtering for large ticket lists
+4. Develop chat analytics and reporting
+5. Integrate knowledge base usage metrics

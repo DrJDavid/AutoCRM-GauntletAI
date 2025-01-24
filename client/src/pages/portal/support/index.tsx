@@ -80,8 +80,8 @@ export default function Support() {
 
   return (
     <PortalLayout>
-      <div className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Contact Support</h1>
           <p className="mt-4 text-lg text-gray-600">
             Need help? Submit a ticket and our team will assist you shortly.
@@ -214,7 +214,7 @@ export default function Support() {
                         <FormControl>
                           <Input 
                             type="email"
-                            placeholder="Your email for follow-up"
+                            placeholder="Your email address for follow-up"
                             {...field}
                           />
                         </FormControl>
@@ -223,11 +223,7 @@ export default function Support() {
                     )}
                   />
 
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={isLoading}
-                  >
+                  <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Submitting...' : 'Submit Ticket'}
                   </Button>
                 </form>
@@ -238,4 +234,4 @@ export default function Support() {
       </div>
     </PortalLayout>
   );
-} 
+}
