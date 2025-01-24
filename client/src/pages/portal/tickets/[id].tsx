@@ -22,6 +22,8 @@ import { useDropzone } from 'react-dropzone';
 import { TicketChat } from '@/components/chat/TicketChat';
 import type { Attachment, Ticket, TicketStatus, TicketPriority, TicketCategory } from '@/types/database';
 import { PortalLayout } from '@/components/layout/PortalLayout';
+import { FileViewer } from '@/components/files/FileViewer';
+import { formatFileSize } from '@/lib/utils';
 
 const statusColors: Record<TicketStatus, string> = {
   open: 'bg-green-500/10 text-green-500 hover:bg-green-500/20',
@@ -62,6 +64,7 @@ export default function TicketDetailsPage() {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedAttachment, setSelectedAttachment] = useState<Attachment | null>(null);
   const [downloadUrls, setDownloadUrls] = useState<Record<string, string>>({});
   const {
     ticket,
@@ -166,18 +169,8 @@ export default function TicketDetailsPage() {
     maxSize: 10 * 1024 * 1024, // 10MB
   });
 
-  const downloadAttachment = async (attachment: Attachment) => {
-    try {
-      const url = await getFileUrl(attachment.file_path);
-      window.open(url, '_blank');
-    } catch (error) {
-      console.error('Failed to download file:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to download file',
-        variant: 'destructive',
-      });
-    }
+  const viewAttachment = (attachment: Attachment) => {
+    setSelectedAttachment(attachment);
   };
 
   if (loading) {
@@ -315,28 +308,24 @@ export default function TicketDetailsPage() {
                 {(ticket.attachments || []).length > 0 && (
                   <div className="mt-4">
                     <h3 className="font-semibold mb-2">Attachments</h3>
-                    <ul className="space-y-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {(ticket.attachments || []).map((attachment: Attachment) => (
-                        <li
+                        <Card
                           key={attachment.id}
-                          className="flex items-center justify-between p-2 rounded-md bg-muted/50"
+                          className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                          onClick={() => viewAttachment(attachment)}
                         >
-                          <span className="flex-1 truncate" title={attachment.file_name}>
-                            {attachment.file_name}
-                          </span>
-                          <span className="text-sm text-muted-foreground mx-4">
-                            {(attachment.file_size / 1024).toFixed(1)}KB
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => downloadAttachment(attachment)}
-                          >
-                            Download
-                          </Button>
-                        </li>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 truncate">
+                              <p className="font-medium truncate">{attachment.file_name}</p>
+                              <p className="text-sm text-gray-500">
+                                {formatFileSize(attachment.file_size)}
+                              </p>
+                            </div>
+                          </div>
+                        </Card>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
               </Card>
@@ -494,6 +483,13 @@ export default function TicketDetailsPage() {
           </Dialog>
         </Card>
       </div>
+      {selectedAttachment && (
+        <FileViewer
+          attachment={selectedAttachment}
+          isOpen={!!selectedAttachment}
+          onClose={() => setSelectedAttachment(null)}
+        />
+      )}
     </PortalLayout>
   );
 }
