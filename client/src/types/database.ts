@@ -97,7 +97,7 @@ export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed'
 /**
  * Ticket category options
  */
-export type TicketCategory = 'technical' | 'billing' | 'account' | 'feature' | 'other'
+export type TicketCategory = 'account' | 'billing' | 'technical_issue' | 'other'
 
 /**
  * Support ticket with all its details

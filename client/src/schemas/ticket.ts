@@ -3,7 +3,7 @@ import type { TicketStatus, TicketPriority, TicketCategory } from '@/types/datab
 
 const ticketStatusEnum: TicketStatus[] = ['open', 'in_progress', 'resolved', 'closed'];
 const ticketPriorityEnum: TicketPriority[] = ['low', 'medium', 'high', 'urgent'];
-const ticketCategoryEnum: TicketCategory[] = ['technical', 'billing', 'account', 'feature', 'other'];
+const ticketCategoryEnum: TicketCategory[] = ['account', 'billing', 'technical_issue', 'other'];
 
 /**
  * Schema for validating ticket creation/update forms

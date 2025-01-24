@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -8,7 +7,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileUpload } from '@/components/ui/file-upload';
 import { useToast } from '@/components/ui/use-toast';
-import { CreateTicketInput, createTicketSchema } from '@/schemas/ticket';
 import { useUserStore } from '@/stores/userStore';
 import { supabase } from '@/lib/supabaseClient';
 import { uploadFiles } from '@/lib/uploadFiles';
@@ -39,22 +37,16 @@ export function CreateTicketForm({ onSuccess }: CreateTicketFormProps) {
     );
   }
 
-  const form = useForm<CreateTicketInput>({
-    resolver: zodResolver(createTicketSchema),
+  const form = useForm({
     defaultValues: {
       title: '',
       description: '',
-      customer_id: currentUser.id,
-      organization_id: currentUser.organization_id,
-      status: 'open',
       priority: 'medium',
       category: 'other',
-      tags: [],
-      metadata: {},
     },
   });
 
-  const onSubmit = async (data: CreateTicketInput) => {
+  const onSubmit = async (data: any) => {
     console.log('Form submission started with data:', data);
 
     try {
@@ -65,6 +57,7 @@ export function CreateTicketForm({ onSuccess }: CreateTicketFormProps) {
         ...data,
         customer_id: currentUser.id,
         organization_id: currentUser.organization_id,
+        status: 'open',
       };
       console.log('Sending ticket data to Supabase:', ticketData);
       
@@ -189,10 +182,9 @@ export function CreateTicketForm({ onSuccess }: CreateTicketFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="technical">Technical</SelectItem>
+                  <SelectItem value="technical_issue">Technical Issue</SelectItem>
                   <SelectItem value="billing">Billing</SelectItem>
                   <SelectItem value="account">Account</SelectItem>
-                  <SelectItem value="feature">Feature Request</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>

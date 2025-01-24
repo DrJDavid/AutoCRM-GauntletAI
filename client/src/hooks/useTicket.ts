@@ -73,7 +73,7 @@ export function useTicket(ticketId: string, options: UseTicketOptions = {}): Use
       if (!data) throw new Error('Ticket not found');
 
       // Check if user has access to this ticket
-      if (data.customer_id !== currentUser?.id && data.organization_id !== currentUser?.organization?.id) {
+      if (data.customer_id !== currentUser?.id && data.organization_id !== currentUser?.organization_id) {
         throw new Error('You do not have access to this ticket');
       }
 
@@ -128,7 +128,7 @@ export function useTicket(ticketId: string, options: UseTicketOptions = {}): Use
         .from('tickets')
         .update({ status })
         .eq('id', ticket.id)
-        .eq('organization_id', currentUser.organization?.id);
+        .eq('organization_id', currentUser.organization_id);
 
       if (error) throw error;
       await fetchTicket();
@@ -145,7 +145,7 @@ export function useTicket(ticketId: string, options: UseTicketOptions = {}): Use
         .from('tickets')
         .update({ priority })
         .eq('id', ticket.id)
-        .eq('organization_id', currentUser.organization?.id);
+        .eq('organization_id', currentUser.organization_id);
 
       if (error) throw error;
       await fetchTicket();
@@ -162,7 +162,7 @@ export function useTicket(ticketId: string, options: UseTicketOptions = {}): Use
         .from('tickets')
         .update({ category })
         .eq('id', ticket.id)
-        .eq('organization_id', currentUser.organization?.id);
+        .eq('organization_id', currentUser.organization_id);
 
       if (error) throw error;
       await fetchTicket();
@@ -179,7 +179,7 @@ export function useTicket(ticketId: string, options: UseTicketOptions = {}): Use
         .from('tickets')
         .update(details)
         .eq('id', ticket.id)
-        .eq('organization_id', currentUser.organization?.id);
+        .eq('organization_id', currentUser.organization_id);
 
       if (error) throw error;
       await fetchTicket();
