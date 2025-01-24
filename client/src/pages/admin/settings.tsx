@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { TestInviteGenerator } from "@/components/TestInviteGenerator";
 
 export default function Settings() {
   return (
@@ -105,6 +106,18 @@ export default function Settings() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Development Tools</CardTitle>
+            <CardDescription>
+              Tools for testing and development (only visible in development mode)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TestInviteGenerator />
+          </CardContent>
+        </Card>
+
         <Card className="border-red-200">
           <CardHeader>
             <CardTitle className="text-red-600">Danger Zone</CardTitle>
@@ -119,4 +132,4 @@ export default function Settings() {
       </div>
     </div>
   );
-} 
+}

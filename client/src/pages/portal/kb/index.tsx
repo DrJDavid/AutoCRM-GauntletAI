@@ -33,34 +33,30 @@ export default function KnowledgeBase() {
 
   return (
     <PortalLayout>
-      {/* Hero Section with Search */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900">Knowledge Base</h1>
-            <p className="mt-4 text-lg text-gray-600">
-              Find answers to common questions and learn how to make the most of our platform
-            </p>
-            <div className="mt-8 max-w-3xl mx-auto">
-              <div className="flex gap-2">
-                <div className="relative flex-grow">
-                  <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <Input
-                    type="search"
-                    placeholder="Search articles..."
-                    className="w-full pl-10"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <Button type="submit">Search</Button>
+      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        {/* Hero Section with Search */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900">Knowledge Base</h1>
+          <p className="mt-4 text-lg text-gray-600">
+            Find answers to common questions and learn how to make the most of our platform
+          </p>
+          <div className="mt-8 max-w-3xl mx-auto">
+            <div className="flex gap-2">
+              <div className="relative flex-grow">
+                <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <Input
+                  type="search"
+                  placeholder="Search articles..."
+                  className="w-full pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
+              <Button type="submit">Search</Button>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
         {/* Categories */}
         <div className="mb-12">
           <h2 className="text-2xl font-bold mb-6">Browse by Category</h2>
@@ -111,4 +107,4 @@ export default function KnowledgeBase() {
       </div>
     </PortalLayout>
   );
-} 
+}

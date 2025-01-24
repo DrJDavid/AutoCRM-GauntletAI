@@ -1,5 +1,6 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
+import { useUserStore } from '@/stores/userStore';
 import {
   Card,
   CardContent,
@@ -10,6 +11,15 @@ import {
 
 export default function Landing() {
   const [, setLocation] = useLocation();
+  const { currentUser } = useUserStore();
+
+  const handleCustomerPortalAccess = () => {
+    if (currentUser) {
+      setLocation('/portal');
+    } else {
+      setLocation('/auth/customer/login');
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
@@ -69,13 +79,13 @@ export default function Landing() {
             <Button 
               variant="outline" 
               className="w-full"
-              onClick={() => setLocation('/portal')}
+              onClick={handleCustomerPortalAccess}
             >
-              Access Customer Portal
+              {currentUser ? 'Go to Customer Portal' : 'Sign In to Customer Portal'}
             </Button>
           </div>
         </CardContent>
       </Card>
     </div>
   );
-} 
+}

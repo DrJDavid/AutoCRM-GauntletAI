@@ -1,4 +1,4 @@
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { useUserStore } from '@/stores/userStore';
 import {
   LayoutDashboard,
@@ -12,11 +12,13 @@ import {
   FileText,
   BarChart,
   UserPlus,
-  UserCog
+  UserCog,
+  LogOut
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/components/ui/use-toast';
 import type { UserRole } from '@/types';
 
 type NavigationItem = {
@@ -53,32 +55,6 @@ const navigation: NavigationItem[] = [
     roles: ['customer']
   },
 
-  // Agent Navigation
-  { 
-    name: 'Agent Dashboard', 
-    href: '/agent/dashboard', 
-    icon: LayoutDashboard,
-    roles: ['agent']
-  },
-  { 
-    name: 'Ticket Queue', 
-    href: '/agent/tickets/queue', 
-    icon: InboxIcon,
-    roles: ['agent']
-  },
-  { 
-    name: 'My Assigned', 
-    href: '/agent/tickets/my-tickets', 
-    icon: List,
-    roles: ['agent']
-  },
-  { 
-    name: 'Knowledge Base', 
-    href: '/agent/kb/articles', 
-    icon: FileText,
-    roles: ['agent']
-  },
-
   // Admin Navigation
   { 
     name: 'Admin Dashboard', 
@@ -99,12 +75,6 @@ const navigation: NavigationItem[] = [
     roles: ['admin']
   },
   { 
-    name: 'Invite Customers', 
-    href: '/org/customers/invite', 
-    icon: UserPlus,
-    roles: ['admin', 'agent']
-  },
-  { 
     name: 'User Management', 
     href: '/admin/users', 
     icon: Users,
@@ -118,9 +88,35 @@ const navigation: NavigationItem[] = [
   },
   {
     name: 'Manage Agents',
-    href: '/org/agents/invite',
+    href: '/admin/manage-agents',
     icon: UserCog,
     roles: ['admin'],
+  },
+
+  // Agent Navigation
+  { 
+    name: 'Dashboard', 
+    href: '/agent', 
+    icon: LayoutDashboard,
+    roles: ['agent']
+  },
+  { 
+    name: 'My Assigned', 
+    href: '/agent/assigned', 
+    icon: InboxIcon,
+    roles: ['agent']
+  },
+  { 
+    name: 'Ticket Queue', 
+    href: '/agent/queue', 
+    icon: List,
+    roles: ['agent']
+  },
+  { 
+    name: 'Knowledge Base', 
+    href: '/agent/kb/articles', 
+    icon: FileText,
+    roles: ['agent']
   },
 
   // Common Navigation
@@ -133,37 +129,64 @@ const navigation: NavigationItem[] = [
 ];
 
 export function Sidebar() {
-  const { currentUser } = useUserStore();
+  const [location, setLocation] = useLocation();
+  const { currentUser, logout } = useUserStore();
+  const { toast } = useToast();
 
   if (!currentUser) return null;
 
   const userNavigation = navigation.filter(item => 
-    item.roles.includes(currentUser.role)
+    item.roles.includes(currentUser.role as UserRole)
   );
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setLocation('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col h-full border-r bg-gray-50/40">
       <ScrollArea className="flex-1 p-4">
         <nav className="flex flex-col gap-1">
-          {userNavigation.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-            >
-              <Button
-                variant="ghost"
-                className={cn(
-                  'w-full justify-start gap-2',
-                  window.location.pathname === item.href && 'bg-gray-100'
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.name}
-              </Button>
-            </Link>
-          ))}
+          {userNavigation.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link key={item.href} href={item.href}>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-start gap-2",
+                    location === item.href && "bg-gray-100"
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.name}
+                </Button>
+              </Link>
+            );
+          })}
         </nav>
       </ScrollArea>
+
+      <div className="p-4 border-t">
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-2 text-red-500 hover:text-red-600 hover:bg-red-50"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4" />
+          Logout
+        </Button>
+      </div>
     </div>
   );
 }

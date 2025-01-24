@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, useSearch } from 'wouter';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -31,6 +31,9 @@ const loginSchema = z.object({
 
 export default function AgentLogin() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
+  const redirectTo = new URLSearchParams(search).get('redirect');
+  
   const { login, currentUser } = useUserStore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -59,11 +62,11 @@ export default function AgentLogin() {
         description: 'You have successfully logged in.',
       });
 
-      // Redirect based on role
-      if (currentUser?.role === 'admin') {
-        setLocation('/admin/dashboard');
+      // If there's a redirect URL, use it; otherwise redirect based on role
+      if (redirectTo) {
+        setLocation(decodeURIComponent(redirectTo));
       } else {
-        setLocation('/agent/dashboard');
+        setLocation(currentUser?.role === 'admin' ? '/admin/dashboard' : '/agent/dashboard');
       }
     } catch (error) {
       toast({
@@ -99,8 +102,7 @@ export default function AgentLogin() {
                         placeholder="your-org-name"
                         {...field}
                         onChange={(e) => {
-                          const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-                          field.onChange(value);
+                          field.onChange(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'));
                         }}
                       />
                     </FormControl>
@@ -118,7 +120,7 @@ export default function AgentLogin() {
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="you@example.com"
+                        placeholder="Enter your email"
                         {...field}
                       />
                     </FormControl>
@@ -136,7 +138,7 @@ export default function AgentLogin() {
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="••••••••"
+                        placeholder="Enter your password"
                         {...field}
                       />
                     </FormControl>
@@ -145,12 +147,8 @@ export default function AgentLogin() {
                 )}
               />
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Signing in...' : 'Sign In'}
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Signing in...' : 'Sign in'}
               </Button>
             </form>
           </Form>
@@ -158,4 +156,4 @@ export default function AgentLogin() {
       </Card>
     </div>
   );
-} 
+}

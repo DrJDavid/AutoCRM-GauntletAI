@@ -42,8 +42,14 @@ A modern, AI-powered customer relationship management system built with React, T
    ```
 
 3. **Environment Setup**
-   - Copy `.env.example` to `.env.local`
-   - Fill in your Supabase credentials
+   - Create a `.env` file in the `client` directory
+   - Add the following Supabase credentials:
+     ```
+     VITE_SUPABASE_URL=your_supabase_project_url
+     VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+     VITE_SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+     ```
+   - You can find these values in your Supabase project settings under Project Settings -> API
 
 4. **Start the development server**
 
@@ -56,6 +62,41 @@ A modern, AI-powered customer relationship management system built with React, T
    ```bash
    npm run build
    ```
+
+## Database Schema
+
+The database schema is organized into several logical groups:
+
+### Core Tables
+- `organizations`: Stores organization details
+- `profiles`: User profiles with role-based access control
+- `teams`: Team management within organizations
+
+### Ticket System
+- `tickets`: Customer support tickets
+- `comments`: Ticket comments and updates
+- `attachments`: File attachments for tickets
+
+### Knowledge Base
+- `knowledge_articles`: Documentation and help articles
+- `article_categories`: Article categorization
+- `article_feedback`: User feedback on articles
+
+### Invitation System
+- `agent_organization_invites`: Invitations for new agents
+- `customer_organization_invites`: Invitations for new customers
+
+Detailed schema documentation can be found in the `db/schema/` directory.
+
+## Row Level Security (RLS)
+
+The database uses Row Level Security to enforce access control:
+
+- **Admins** can manage their organization's data
+- **Agents** can view and manage assigned tickets
+- **Customers** can only access their own tickets and data
+
+RLS policies are documented in the SQL files under `db/schema/`.
 
 ## Project Structure
 

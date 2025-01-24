@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, useSearch } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -33,6 +33,9 @@ const loginSchema = z.object({
 
 export default function CustomerLogin() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
+  const redirectTo = new URLSearchParams(search).get('redirect') || '/portal';
+  
   const { login, currentUser } = useUserStore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -59,8 +62,8 @@ export default function CustomerLogin() {
         description: 'You have successfully logged in.',
       });
 
-      // Redirect to customer portal
-      setLocation('/portal');
+      // Use the redirect URL from the query parameter
+      setLocation(decodeURIComponent(redirectTo));
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -134,11 +137,7 @@ export default function CustomerLogin() {
                 )}
               />
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>

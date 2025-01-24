@@ -1,0 +1,22 @@
+1. I am a beginner in web development and I want to create a CRM system.
+2. I want to focus on ticket management, with both customer portal and agent interfaces.
+3. I want to prioritize AI-first development principles, emphasizing code organization that's optimal for AI maintenance and enhancement.
+4. I want to use React 18+ with TypeScript, Vite, React Router v6, Zustand, shadcn/ui + Tailwind CSS, Supabase, Vitest + React Testing Library, and Supabase Realtime.
+5. I want to integrate Supabase Auth for authentication, Supabase Database for data persistence, and Supabase Realtime for live updates.
+6. I want to implement row level security (RLS) policies for authorization.
+7. I run the SQL myself in the Supabase console, so just give me the commands and I will run them.
+8. That said, keep our .sql files in the supabase directory up to date with our changes, for reference.
+9. Ask for clarification if something is unclear.
+10. Make comments throughout the code, and .md files for documentation frequently. Limit ambiguity where possible.
+11. We are using git for version control, interfacing with github.
+12. We are hosting on Vercel.13. We are using Windows for development.
+14. We use VSCode as our primary IDE.
+15. We follow trunk-based development with feature branches.16. We use ESLint and Prettier for code formatting and quality.
+17. We write unit tests for critical business logic.
+18. We use TypeScript with strict mode enabled.19. We maintain a CHANGELOG.md for version history.
+20. We use JSDoc comments for function documentation.
+21. We create separate .md files for complex features.22. We optimize for bundle size using code splitting.
+23. We implement proper error boundaries and loading states.
+24. We use proper caching strategies with Supabase.25. We follow WCAG 2.1 guidelines for accessibility.
+26. We use semantic HTML elements.
+27. We ensure keyboard navigation works properly.

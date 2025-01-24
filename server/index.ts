@@ -3,6 +3,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import authRoutes from './routes/auth';
+import inviteRoutes from './routes/invites';
 
 // Check required environment variables
 const requiredEnvVars = [
@@ -111,3 +112,4 @@ app.use((req, res, next) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/invites', inviteRoutes);

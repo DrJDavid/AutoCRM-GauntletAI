@@ -1,0 +1,17 @@
+# Required Supabase Environment Variables
+
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+# You can find these values in your Supabase project settings:
+# 1. Go to https://supabase.com/dashboard
+# 2. Select your project
+# 3. Go to Project Settings -> API
+# 4. You'll find:
+#    - Project URL (for VITE_SUPABASE_URL)
+#    - anon/public key (for VITE_SUPABASE_ANON_KEY)
+#    - service_role key (for VITE_SUPABASE_SERVICE_ROLE_KEY)
+
+# Create a .env file in the root directory and copy these variables there,
+# replacing the placeholder values with your actual Supabase credentials.

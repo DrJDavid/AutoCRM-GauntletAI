@@ -1,62 +1,36 @@
-import { useState } from 'react';
-import { useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Link } from 'wouter';
-
-const registerSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+import { useToast } from '@/components/ui/use-toast';
+import { RegisterInput, registerSchema } from '@/schemas/profile';
+import { supabase } from '@/lib/supabaseClient';
+import { useLocation } from '@/hooks/useLocation';
+import { AuthError } from '@supabase/supabase-js';
 
 export default function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof registerSchema>>({
+  const form = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       email: '',
       password: '',
       confirmPassword: '',
+      role: 'customer',
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof registerSchema>) => {
+  const onSubmit = async (data: RegisterInput) => {
     try {
-      setIsLoading(true);
       const { error } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
+        email: data.email,
+        password: data.password,
         options: {
           data: {
-            role: 'customer', // Default role for new registrations
+            role: data.role,
           },
         },
       });
@@ -64,31 +38,33 @@ export default function Register() {
       if (error) throw error;
 
       toast({
-        title: 'Registration successful!',
+        title: 'Registration Successful',
         description: 'Please check your email to verify your account.',
       });
-      setLocation('/login');
+
+      setLocation('/auth/login');
     } catch (error) {
+      const message = error instanceof AuthError 
+        ? error.message 
+        : 'An unexpected error occurred during registration';
+        
       toast({
+        title: 'Registration Failed',
+        description: message,
         variant: 'destructive',
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to register',
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-          <CardDescription>
-            Enter your email below to create your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div className="container max-w-md mx-auto mt-10">
+        <div className="space-y-6">
+          <div className="space-y-2 text-center">
+            <h1 className="text-3xl font-bold">Create an Account</h1>
+            <p className="text-gray-500">Enter your information to get started</p>
+          </div>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -98,16 +74,13 @@ export default function Register() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Enter your email"
-                        type="email"
-                        {...field}
-                      />
+                      <Input {...field} type="email" placeholder="Enter your email" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="password"
@@ -115,16 +88,13 @@ export default function Register() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Create a password"
-                        type="password"
-                        {...field}
-                      />
+                      <Input {...field} type="password" placeholder="Create a password" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="confirmPassword"
@@ -132,33 +102,27 @@ export default function Register() {
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Confirm your password"
-                        type="password"
-                        {...field}
-                      />
+                      <Input {...field} type="password" placeholder="Confirm your password" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Creating account...' : 'Create account'}
+
+              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? 'Creating Account...' : 'Create Account'}
               </Button>
             </form>
           </Form>
-        </CardContent>
-        <CardFooter className="text-sm text-center">
-          Already have an account?{' '}
-          <Link href="/login" className="text-primary hover:underline">
-            Login
-          </Link>
-        </CardFooter>
-      </Card>
+
+          <div className="text-center text-sm">
+            <span className="text-gray-500">Already have an account?</span>{' '}
+            <Button variant="link" className="p-0" onClick={() => setLocation('/auth/login')}>
+              Sign In
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

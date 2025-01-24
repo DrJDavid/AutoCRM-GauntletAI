@@ -7,12 +7,60 @@ import { RichTextEditor } from '@/components/shared/RichTextEditor';
 import { FileUpload } from '@/components/shared/FileUpload';
 import type { TicketDetailProps, TicketMessage } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
+import { supabase } from '@/lib/supabase';
+import { toast } from '@/components/ui/use-toast';
 
-export function TicketDetail({ ticket, messages }: TicketDetailProps) {
+export function TicketDetail({ ticket, messages, onStatusChange }: TicketDetailProps) {
   const [newMessage, setNewMessage] = useState('');
   const [attachments, setAttachments] = useState<string[]>([]);
+  const [isClosing, setIsClosing] = useState(false);
   const { currentUser } = useUserStore();
+  const isCustomer = currentUser?.role === 'customer';
   const isAgent = currentUser?.role === 'agent';
+
+  const handleCloseTicket = async () => {
+    if (!currentUser || !ticket) return;
+
+    setIsClosing(true);
+    try {
+      const { error } = await supabase
+        .from('tickets')
+        .update({ 
+          status: 'closed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', ticket.id);
+
+      if (error) {
+        console.error('Error closing ticket:', error);
+        toast({
+          title: "Error",
+          description: "Failed to close ticket. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Ticket closed successfully.",
+      });
+      
+      // Notify parent component of status change
+      if (onStatusChange) {
+        onStatusChange('closed');
+      }
+    } catch (error) {
+      console.error('Error closing ticket:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsClosing(false);
+    }
+  };
 
   const handleSubmitMessage = () => {
     // Handle message submission through Supabase
@@ -44,7 +92,7 @@ export function TicketDetail({ ticket, messages }: TicketDetailProps) {
       <div className="prose prose-sm max-w-none">
         {message.content}
       </div>
-      {message.attachments.length > 0 && (
+      {message.attachments?.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-2">
           {message.attachments.map((url) => (
             <a
@@ -66,8 +114,19 @@ export function TicketDetail({ ticket, messages }: TicketDetailProps) {
     <div className="space-y-6">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-xl font-bold">{ticket.title}</CardTitle>
-          <StatusBadge status={ticket.status} />
+          <div className="flex items-center gap-4">
+            <CardTitle className="text-xl font-bold">{ticket.title}</CardTitle>
+            <StatusBadge status={ticket.status} />
+          </div>
+          {isCustomer && ticket.status === 'open' && (
+            <Button
+              variant="secondary"
+              onClick={handleCloseTicket}
+              disabled={isClosing}
+            >
+              {isClosing ? 'Closing...' : 'Close Ticket'}
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
