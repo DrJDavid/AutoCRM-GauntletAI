@@ -12,6 +12,25 @@ interface AuthCredentials {
 
 let authCheckInProgress = false;
 
+// Helper function to delay execution
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper function to retry an operation
+const retry = async <T>(
+  operation: () => Promise<T>,
+  retries = 3,
+  delayMs = 1000,
+  backoff = 1.5
+): Promise<T> => {
+  try {
+    return await operation();
+  } catch (error) {
+    if (retries === 0) throw error;
+    await delay(delayMs);
+    return retry(operation, retries - 1, delayMs * backoff);
+  }
+};
+
 interface UserState {
   currentUser: Profile | null;
   isAuthenticated: boolean;
@@ -123,31 +142,36 @@ export const useUserStore = create<UserState>()(
           if (authError) throw authError;
           if (!session) throw new Error('No session after login');
 
-          // Get user profile with organization data
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*, organization:organizations(*)')
-            .eq('id', session.user.id)
-            .single();
-
-          if (profileError) throw profileError;
-          if (!profile) throw new Error('Profile not found');
-
-          // Verify organization access if team login
-          if (type === 'team' && organizationSlug) {
-            const { data: org, error: orgError } = await supabase
-              .from('organizations')
-              .select('id, slug')
-              .eq('slug', organizationSlug)
+          // Get user profile with organization data, with retry mechanism
+          const profile = await retry(async () => {
+            const { data, error: profileError } = await supabase
+              .from('profiles')
+              .select('*, organization:organizations(*)')
+              .eq('id', session.user.id)
               .single();
 
-            if (orgError || !org) {
-              throw new Error('Invalid organization');
-            }
+            if (profileError) throw profileError;
+            if (!data) throw new Error('Profile not found');
+            return data;
+          });
 
-            if (org.id !== profile.organization_id) {
-              throw new Error('You do not have access to this organization');
-            }
+          // Verify organization access if team login, with retry mechanism
+          if (type === 'team' && organizationSlug) {
+            await retry(async () => {
+              const { data: org, error: orgError } = await supabase
+                .from('organizations')
+                .select('id, slug')
+                .eq('slug', organizationSlug)
+                .single();
+
+              if (orgError || !org) {
+                throw new Error('Invalid organization');
+              }
+
+              if (org.id !== profile.organization_id) {
+                throw new Error('You do not have access to this organization');
+              }
+            });
           }
 
           // Update store state
