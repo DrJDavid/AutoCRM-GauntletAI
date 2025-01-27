@@ -1,0 +1,22 @@
+{
+  "extends": "../../config/tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@autocrm/api-types": ["../../packages/api-types/src"],
+      "@autocrm/utils": ["../../packages/utils/src"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"],
+  "references": [
+    { "path": "../../packages/api-types" },
+    { "path": "../../packages/utils" }
+  ]
+}
