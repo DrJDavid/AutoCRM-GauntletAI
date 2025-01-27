@@ -20,3 +20,4 @@
 24. We use proper caching strategies with Supabase.25. We follow WCAG 2.1 guidelines for accessibility.
 26. We use semantic HTML elements.
 27. We ensure keyboard navigation works properly.
+28. Use Powershell syntax in the terminal when necessary.

@@ -1,5 +1,6 @@
 import { useEffect, lazy } from 'react';
-import { Switch, Route, Link } from 'wouter';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { Switch } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { useUserStore } from '@/stores/userStore';
@@ -141,172 +142,248 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen">
-        <Toaster />
-        <Switch>
+      <BrowserRouter>
+        <Routes>
           {/* Public Routes */}
-          <Route path="/" component={Landing} />
+          <Route path="/" element={<Landing />} />
 
           {/* Auth Routes */}
-          <Route path="/auth/reset-password" component={ResetPassword} />
-          <Route path="/auth/reset-password/confirm" component={ResetPassword} />
+          <Route path="/auth/reset-password" element={<ResetPassword />} />
+          <Route path="/auth/reset-password/confirm" element={<ResetPassword />} />
 
           {/* Organization Routes */}
-          <Route path="/org/new" component={OrganizationNew} />
-          <Route path="/org/login" component={OrganizationLogin} />
-          <Route path="/org/setup" component={OrganizationSetup} />
+          <Route path="/org/new" element={<OrganizationNew />} />
+          <Route path="/org/login" element={<OrganizationLogin />} />
+          <Route path="/org/setup" element={<OrganizationSetup />} />
           
           {/* Team Member Routes */}
-          <Route path="/auth/team/accept-invite" component={TeamAcceptInvite} />
-          <Route path="/auth/team/login" component={TeamLogin} />
+          <Route path="/auth/team/accept-invite" element={<TeamAcceptInvite />} />
+          <Route path="/auth/team/login" element={<TeamLogin />} />
           
           {/* Agent Routes */}
-          <Route path="/auth/agent/login" component={AgentLogin} />
-          <Route path="/auth/agent/register" component={AgentRegister} />
+          <Route path="/auth/agent/login" element={<AgentLogin />} />
+          <Route path="/auth/agent/register" element={<AgentRegister />} />
           
           {/* Customer Routes */}
-          <Route path="/auth/customer/accept-invite" component={CustomerAcceptInvite} />
-          <Route path="/auth/customer/login" component={CustomerLogin} />
-          <Route path="/auth/customer/register" component={CustomerRegister} />
+          <Route path="/auth/customer/accept-invite" element={<CustomerAcceptInvite />} />
+          <Route path="/auth/customer/login" element={<CustomerLogin />} />
+          <Route path="/auth/customer/register" element={<CustomerRegister />} />
 
           {/* Customer Portal - Protected */}
           <Route path="/portal">
-            <ProtectedRoute allowedRoles={['customer']}>
-              <CustomerPortal />
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <CustomerPortal />
+                </ProtectedRoute>
+              }
+            />
           </Route>
           <Route path="/portal/tickets/:id">
-            <ProtectedRoute allowedRoles={['customer']}>
-              <TicketDetails />
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <TicketDetails />
+                </ProtectedRoute>
+              }
+            />
           </Route>
           <Route path="/portal/kb">
-            <ProtectedRoute allowedRoles={['customer']}>
-              <KnowledgeBase />
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <KnowledgeBase />
+                </ProtectedRoute>
+              }
+            />
           </Route>
           <Route path="/portal/support">
-            <ProtectedRoute allowedRoles={['customer']}>
-              <Support />
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <Support />
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           {/* Protected Organization Routes */}
           <Route path="/org/customers/invite">
-            <ProtectedRoute allowedRoles={['admin']}>
-              <CustomerInvite />
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <CustomerInvite />
+                </ProtectedRoute>
+              }
+            />
           </Route>
           <Route path="/org/agents/invite">
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AgentInvite />
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AgentInvite />
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           {/* Admin Routes */}
           <Route path="/admin">
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout>
-                <AdminDashboard />
-              </AdminLayout>
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminLayout>
+                    <AdminDashboard />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           <Route path="/admin/dashboard">
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout>
-                <AdminDashboard />
-              </AdminLayout>
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminLayout>
+                    <AdminDashboard />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
           </Route>
           <Route path="/admin/tickets">
-            <ProtectedRoute allowedRoles={['admin', 'agent']}>
-              <AdminLayout>
-                <AdminTickets />
-              </AdminLayout>
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'agent']}>
+                  <AdminLayout>
+                    <AdminTickets />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
           </Route>
           <Route path="/admin/analytics">
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout>
-                <AdminAnalytics />
-              </AdminLayout>
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminLayout>
+                    <AdminAnalytics />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
           </Route>
           <Route path="/admin/settings">
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout>
-                <AdminSettings />
-              </AdminLayout>
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminLayout>
+                    <AdminSettings />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
           </Route>
           <Route path="/admin/users">
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout>
-                <UserManagement />
-              </AdminLayout>
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminLayout>
+                    <UserManagement />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
           </Route>
           <Route path="/admin/invite-customers">
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout>
-                <InviteCustomers />
-              </AdminLayout>
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminLayout>
+                    <InviteCustomers />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
           </Route>
           <Route path="/admin/manage-agents">
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout>
-                <ManageAgents />
-              </AdminLayout>
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminLayout>
+                    <ManageAgents />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           {/* Agent Routes */}
           <Route path="/agent">
-            <ProtectedRoute allowedRoles={['agent']}>
-              <AgentLayout>
-                <AgentDashboard />
-              </AgentLayout>
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['agent']}>
+                  <AgentLayout>
+                    <AgentDashboard />
+                  </AgentLayout>
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           <Route path="/agent/dashboard">
-            <ProtectedRoute allowedRoles={['agent']}>
-              <AgentLayout>
-                <AgentDashboard />
-              </AgentLayout>
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['agent']}>
+                  <AgentLayout>
+                    <AgentDashboard />
+                  </AgentLayout>
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           <Route path="/agent/assigned">
-            <ProtectedRoute allowedRoles={['agent']}>
-              <AgentLayout>
-                <AgentAssigned />
-              </AgentLayout>
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['agent']}>
+                  <AgentLayout>
+                    <AgentAssigned />
+                  </AgentLayout>
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           <Route path="/agent/queue">
-            <ProtectedRoute allowedRoles={['agent']}>
-              <AgentLayout>
-                <AgentQueue />
-              </AgentLayout>
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['agent']}>
+                  <AgentLayout>
+                    <AgentQueue />
+                  </AgentLayout>
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           <Route path="/agent/tickets/:id">
-            <ProtectedRoute allowedRoles={['agent']}>
-              <AgentLayout>
-                <AgentTicketDetailsPage />
-              </AgentLayout>
-            </ProtectedRoute>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['agent']}>
+                  <AgentLayout>
+                    <AgentTicketDetailsPage />
+                  </AgentLayout>
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           {/* 404 Route */}
-          <Route component={NotFound} />
-        </Switch>
-      </div>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }

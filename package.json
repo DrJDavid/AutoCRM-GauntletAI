@@ -5,23 +5,29 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "dev:web": "turbo run dev --filter=@autocrm/web",
-    "dev:api": "turbo run dev --filter=@autocrm/api",
+    "build": "concurrently \"cd apps/api && pnpm build\" \"cd apps/web && pnpm build\"",
+    "dev": "concurrently \"cd apps/api && pnpm dev\" \"cd apps/web && pnpm dev\"",
+    "dev:web": "cd apps/web && pnpm dev",
+    "dev:api": "cd apps/api && pnpm dev",
     "dev:server": "cross-env PORT=5000 tsx server/index.ts",
     "dev:client": "cross-env PORT=3000 vite",
-    "test": "turbo run test",
-    "test:web": "turbo run test --filter=@autocrm/web",
-    "test:api": "turbo run test --filter=@autocrm/api",
+    "test": "concurrently \"cd apps/api && pnpm test\" \"cd apps/web && pnpm test\"",
+    "test:web": "cd apps/web && pnpm test",
+    "test:api": "cd apps/api && pnpm test",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "test:invite": "tsx scripts/test-customer-invite.ts",
-    "lint": "turbo run lint",
+    "lint": "concurrently \"cd apps/api && pnpm lint\" \"cd apps/web && pnpm lint\"",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "clean": "turbo run clean && rm -rf node_modules",
+    "clean": "concurrently \"cd apps/api && pnpm clean\" \"cd apps/web && pnpm clean\" && rm -rf node_modules",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc"
+  },
+  "pnpm": {
+    "overrides": {
+      "esbuild": "0.19.12",
+      "tsx": "3.12.10"
+    }
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -88,6 +94,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@esbuild-kit/esm-loader": "^2.6.5",
     "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/dom": "^10.4.0",
@@ -107,8 +114,8 @@
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
-    "eslint": "^8.56.0",
     "esbuild": "^0.24.0",
+    "eslint": "^8.56.0",
     "jsdom": "^26.0.0",
     "msw": "^2.7.0",
     "postcss": "^8.4.47",
