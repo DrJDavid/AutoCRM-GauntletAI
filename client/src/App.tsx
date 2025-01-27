@@ -13,6 +13,7 @@ import { PortalLayout } from '@/components/layout/PortalLayout';
 import { AgentLayout } from '@/components/layout/AgentLayout';
 import { InviteManagement } from '@/components/InviteManagement';
 import { useTicketStore } from '@/stores/ticketStore';
+import { create } from 'zustand';
 
 // Auth Pages
 import Login from '@/pages/auth/Login';
@@ -36,8 +37,8 @@ import OrganizationSetup from '@/pages/org/Setup';
 import NotFound from '@/pages/not-found';
 
 // Types
-import type { Profile } from '@/types';
-type UserRole = Profile['role'];
+import type { DbProfile } from '@/types/database';
+type UserRole = DbProfile['role'];
 
 // Placeholder Components
 const OrganizationInvite = () => <div>Organization Invite Page</div>;
@@ -108,36 +109,18 @@ function App() {
   }, [currentUser, setupTicketSubscription, cleanup]);
 
   useEffect(() => {
-    // Set up auth state listener
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
-      
-      // Only update state for sign in/out events
-      switch (event) {
-        case 'SIGNED_IN':
-          // Only check auth if we don't have a user and it's not an initial session
-          if (!useUserStore.getState().currentUser && event !== 'INITIAL_SESSION') {
-            await checkAuth();
-          }
-          break;
-        case 'SIGNED_OUT':
-          useUserStore.setState({ 
-            currentUser: null, 
-            isAuthenticated: false,
-            isLoading: false,
-            error: null 
-          });
-          break;
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN') {
+          useUserStore.setState((state: UserState) => ({
+            ...state,
+            currentUser: session?.user as DbProfile
+          }));
+        }
       }
-    });
-
-    // Cleanup subscription on unmount
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []); // Empty dependency array since checkAuth is stable
+    );
+    return () => authListener?.subscription.unsubscribe();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

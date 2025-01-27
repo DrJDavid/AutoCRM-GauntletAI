@@ -35,7 +35,7 @@ export type {
 // Form Types
 export interface CreateTicketForm {
   title: string;
-  description: string;
+  current_description: string;
   category: TicketCategory;
   priority: TicketPriority;
 }

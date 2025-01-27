@@ -16,6 +16,7 @@ import { useTicketStore } from "@/stores/ticketStore";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabaseClient";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminTickets() {
   const [location, setLocation] = useLocation();
@@ -59,8 +60,13 @@ export default function AdminTickets() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-[200px]" />
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -113,7 +119,7 @@ export default function AdminTickets() {
                         ? "default"
                         : ticket.status === "in_progress"
                         ? "secondary"
-                        : "success"
+                        : "destructive"
                     }
                   >
                     {ticket.status}
@@ -122,19 +128,19 @@ export default function AdminTickets() {
                 <TableCell>
                   <Badge
                     variant={
-                      ticket.priority === "high"
+                      ticket.priority === "urgent"
                         ? "destructive"
-                        : ticket.priority === "medium"
-                        ? "warning"
-                        : "default"
+                        : ticket.priority === "high"
+                        ? "default"
+                        : "secondary"
                     }
                   >
                     {ticket.priority}
                   </Badge>
                 </TableCell>
-                <TableCell>{ticket.customer?.email || "Unknown"}</TableCell>
+                <TableCell>{ticket.customer.email}</TableCell>
                 <TableCell>
-                  {ticket.assigned_to?.email || (
+                  {ticket.assigned_agent?.email || (
                     <Button
                       variant="outline"
                       size="sm"

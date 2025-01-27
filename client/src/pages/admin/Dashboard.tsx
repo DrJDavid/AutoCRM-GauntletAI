@@ -64,6 +64,7 @@ export default function AdminDashboard() {
   // Calculate ticket statistics
   const totalTickets = tickets.length;
   const openTickets = tickets.filter(t => t.status === 'open').length;
+  const inProgressTickets = tickets.filter(t => t.status === 'in_progress').length;
   const resolvedTickets = tickets.filter(t => t.status === 'resolved').length;
   const urgentTickets = tickets.filter(t => t.priority === 'urgent').length;
 
@@ -71,6 +72,33 @@ export default function AdminDashboard() {
   const ticketsThisWeek = totalTickets;
   const ticketsLastWeek = Math.floor(totalTickets * 0.8);
   const trend = ((ticketsThisWeek - ticketsLastWeek) / ticketsLastWeek) * 100;
+
+  const stats = [
+    {
+      title: "Total Tickets",
+      value: totalTickets,
+      change: trend >= 0 ? `+${trend.toFixed(1)}%` : `${trend.toFixed(1)}%`,
+      description: "from last week"
+    },
+    {
+      title: "Active Agents",
+      value: "8",
+      change: "+2",
+      description: "new this week"
+    },
+    {
+      title: "Customer Satisfaction",
+      value: "94%",
+      change: "+2%",
+      description: "from last month"
+    },
+    {
+      title: "Avg Response Time",
+      value: "2.5h",
+      change: "-30min",
+      description: "from last week"
+    }
+  ];
 
   return (
     <div className="space-y-6 p-8">
@@ -83,66 +111,25 @@ export default function AdminDashboard() {
 
       {/* Stats Overview */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
-            <TicketCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-2xl font-bold">{totalTickets}</div>
-                <p className="text-xs text-muted-foreground">
-                  {trend >= 0 ? '+' : ''}{trend.toFixed(1)}% from last week
-                </p>
-              </div>
-              {trend >= 0 ? (
-                <ArrowUpRight className="h-4 w-4 text-red-500" />
-              ) : (
-                <ArrowDownRight className="h-4 w-4 text-green-500" />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{openTickets}</div>
-            <p className="text-xs text-muted-foreground">
-              {((openTickets / totalTickets) * 100).toFixed(1)}% of total
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resolved Tickets</CardTitle>
-            <TicketCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{resolvedTickets}</div>
-            <p className="text-xs text-muted-foreground">
-              {((resolvedTickets / totalTickets) * 100).toFixed(1)}% resolution rate
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Urgent Tickets</CardTitle>
-            <AlertCircle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{urgentTickets}</div>
-            <p className="text-xs text-muted-foreground">
-              Requires immediate attention
-            </p>
-          </CardContent>
-        </Card>
+        {stats.map((stat) => (
+          <Card key={stat.title}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {stat.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-xs text-muted-foreground">
+                <span className={stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}>
+                  {stat.change}
+                </span>
+                {' '}
+                {stat.description}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Quick Actions */}
@@ -171,4 +158,4 @@ export default function AdminDashboard() {
       </div>
     </div>
   );
-}
+} 

@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import type { TicketFilters } from '@/types';
+import type { TicketFilters } from '@/types/database';
 
 export default function TicketListPage() {
   const [, setLocation] = useLocation();
@@ -25,9 +25,19 @@ export default function TicketListPage() {
   }, [fetchTickets]);
 
   const handleFilterChange = (key: keyof TicketFilters, value: string[]) => {
-    const newFilters = { ...activeFilters, [key]: value };
+    const newFilters: TicketFilters = { 
+      ...activeFilters, 
+      [key]: value 
+    };
     setActiveFilters(newFilters);
     setFilters(newFilters);
+  };
+
+  const handleStatusFilter = (value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      status: value ? [value] : []
+    }));
   };
 
   const filteredTickets = tickets.filter((ticket) =>
@@ -63,9 +73,8 @@ export default function TicketListPage() {
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="new">New</SelectItem>
                   <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="resolved">Resolved</SelectItem>
                   <SelectItem value="closed">Closed</SelectItem>
                 </SelectContent>

@@ -91,13 +91,17 @@ export default function CustomerInvite() {
             details: error.details,
             hint: error.hint,
             code: error.code,
-            status: error.status,
             raw: error,
             full: JSON.stringify(error, null, 2),
             requestData: {
               org_id: currentUser.organization.id,
               customer_email: email
             }
+          });
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
           });
           throw error;
         }

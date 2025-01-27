@@ -40,12 +40,8 @@ export function FileUpload({
       const { data, error } = await supabase.storage
         .from('ticket-attachments')
         .upload(fileName, file, {
-          onUploadProgress: (event) => {
-            const percent = (event.loaded / (event.total || 0)) * 100;
-            setProgress(prev => 
-              prev.map((p, i) => i === index ? percent : p)
-            );
-          }
+          cacheControl: '3600',
+          upsert: false
         });
 
       if (error) throw error;
@@ -87,6 +83,7 @@ export function FileUpload({
         multiple
         accept={accept}
         onChange={handleFileSelect}
+        aria-label="Select files to upload"
       />
 
       {files.length > 0 && (

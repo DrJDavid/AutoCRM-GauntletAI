@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/lib/supabaseClient';
-import type { Profile } from '@/db/types/database';
+import type { DbProfile } from '@/types/database';
 
 interface AuthCredentials {
   email: string;
@@ -32,14 +32,14 @@ const retry = async <T>(
 };
 
 interface UserState {
-  currentUser: Profile | null;
+  currentUser: DbProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: Error | null;
-  login: (credentials: AuthCredentials) => Promise<Profile>;
+  login: (credentials: AuthCredentials) => Promise<DbProfile>;
   signUp: (email: string, password: string, role: string, organizationId?: string) => Promise<void>;
   logout: () => Promise<void>;
-  checkAuth: () => Promise<Profile | null>;
+  checkAuth: () => Promise<DbProfile | null>;
 }
 
 export const useUserStore = create<UserState>()(
@@ -300,8 +300,7 @@ export const useUserStore = create<UserState>()(
     }),
     {
       name: 'user-storage',
-      // Only persist these fields
-      partialize: (state) => ({ 
+      partialize: (state: UserState) => ({
         currentUser: state.currentUser,
         isAuthenticated: state.isAuthenticated
       }),

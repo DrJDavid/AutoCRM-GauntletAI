@@ -13,8 +13,9 @@ import {
   Button
 } from '@/components/ui';
 import { Loader2, Search } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
-type TicketStatus = 'new' | 'pending' | 'resolved' | 'closed';
+type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export default function TicketList() {
@@ -45,7 +46,7 @@ export default function TicketList() {
   // Filter tickets based on search and filters
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.description.toLowerCase().includes(searchQuery.toLowerCase());
+      ticket.current_description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
     const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
     return matchesSearch && matchesStatus && matchesPriority;
@@ -101,8 +102,8 @@ export default function TicketList() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="new">New</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="open">Open</SelectItem>
+            <SelectItem value="in_progress">In Progress</SelectItem>
             <SelectItem value="resolved">Resolved</SelectItem>
             <SelectItem value="closed">Closed</SelectItem>
           </SelectContent>
@@ -137,7 +138,7 @@ export default function TicketList() {
                 <div>
                   <h3 className="font-semibold">{ticket.title}</h3>
                   <p className="text-sm text-muted-foreground line-clamp-2">
-                    {ticket.description}
+                    {ticket.current_description}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -149,14 +150,12 @@ export default function TicketList() {
                   }`}>
                     {ticket.priority}
                   </span>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    ticket.status === 'new' ? 'bg-blue-100 text-blue-700' :
-                    ticket.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                    ticket.status === 'resolved' ? 'bg-green-100 text-green-700' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
-                    {ticket.status}
-                  </span>
+                  {ticket.status === 'open' && (
+                    <Badge variant="default">Open</Badge>
+                  )}
+                  {ticket.status === 'in_progress' && (
+                    <Badge variant="secondary">In Progress</Badge>
+                  )}
                 </div>
               </div>
             </Card>

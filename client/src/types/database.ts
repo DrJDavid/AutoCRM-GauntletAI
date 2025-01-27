@@ -4,6 +4,8 @@
  * These types ensure type safety when interacting with the database through Supabase client.
  */
 
+import { User } from "@supabase/supabase-js"
+
 export type Json =
   | string
   | number
@@ -37,7 +39,7 @@ export interface Organization {
 export interface OrganizationMember {
   id: string
   organization_id: string
-  user_id: string
+  profile_id: string
   role: string
   created_at: string | null
   updated_at: string | null
@@ -51,8 +53,9 @@ export interface OrganizationMember {
 export interface Profile {
   id: string
   email: string
-  role: 'admin' | 'agent' | 'customer'
-  organization_id: string | null
+  role: 'head_admin' | 'admin' | 'agent' | 'customer'
+  organization_id: string
+  is_head_admin: boolean
   full_name: string | null
   avatar_url: string | null
   created_at: string
@@ -87,7 +90,7 @@ export interface TeamMember {
 /**
  * Ticket status options
  */
-export type TicketStatus = 'new' | 'open' | 'in_progress' | 'resolved' | 'closed' | 'on_hold' | 'cancelled';
+export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 
 /**
  * Ticket priority levels
@@ -244,3 +247,44 @@ export interface AgentOrganizationInvite extends BaseInvite {}
  * Invitation for a customer to join an organization
  */
 export interface CustomerOrganizationInvite extends BaseInvite {}
+
+// Add these type definitions to match SQL schema
+export type DbTicket = {
+  id: string;
+  title: string;
+  current_description: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  category: TicketCategory;
+  organization_id: string;
+  customer_id: string;
+  assigned_agent_id: string | null;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+  // Relationships
+  customer: { email: string; full_name: string };
+  assigned_agent: { email: string; full_name: string } | null;
+};
+
+export type DbProfile = {
+  id: string;
+  email: string;
+  organization_id: string;
+  role: 'head_admin' | 'admin' | 'agent' | 'customer';
+  is_head_admin: boolean;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+};
+
+export interface TicketFilters {
+  status?: string[];
+  priority?: string[];
+  assignedTo?: string[];
+  category?: string[];
+  // Remove tags filter
+}
+
+// Add these to existing enums
+export type UserRole = 'head_admin' | 'admin' | 'agent' | 'customer';

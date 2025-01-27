@@ -1,12 +1,17 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
-import type { Ticket, TicketFilters } from '@/types';
+import type { TicketFilters } from '@/types';
 import { useUserStore } from './userStore';
+import type { DbTicket, Ticket } from '@/types/database';
 
 interface TicketState {
-  tickets: Ticket[];
-  selectedTicket: Ticket | null;
-  filters: TicketFilters;
+  tickets: DbTicket[];
+  selectedTicket: DbTicket | null;
+  filters: {
+    status?: string[];
+    priority?: string[];
+    assignedTo?: string[];
+  };
   isLoading: boolean;
   error: Error | null;
   fetchTickets: () => Promise<void>;
@@ -25,9 +30,8 @@ export const useTicketStore = create<TicketState>((set, get) => ({
   filters: {},
   isLoading: false,
   error: null,
-
-  setFilters: (filters) => set({ filters }),
-  setSelectedTicket: (ticket) => set({ selectedTicket: ticket }),
+  setFilters: (filters: TicketFilters) => set({ filters }),
+  setSelectedTicket: (ticket: Ticket | null) => set({ selectedTicket: ticket as DbTicket | null }),
 
   fetchTickets: async () => {
     set({ isLoading: true });
@@ -39,17 +43,9 @@ export const useTicketStore = create<TicketState>((set, get) => ({
         .from('tickets')
         .select(`
           *,
-          customer:profiles!customer_id (
-            email,
-            full_name
-          ),
-          attachments (
-            id,
-            file_name,
-            storage_path,
-            content_type,
-            file_size
-          )
+          customer:customer_id (email, full_name),
+          assigned_agent:assigned_agent_id (email, full_name),
+          ticket_attachments (id, file_path, uploaded_by, created_at)
         `);
 
       // Filter based on user role
@@ -70,9 +66,6 @@ export const useTicketStore = create<TicketState>((set, get) => ({
       }
       if (filters.assignedTo?.length) {
         query = query.in('assigned_agent_id', filters.assignedTo);
-      }
-      if (filters.tags?.length) {
-        query = query.contains('tags', filters.tags);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -135,23 +128,22 @@ export const useTicketStore = create<TicketState>((set, get) => ({
   },
 
   createTicket: async (ticket) => {
-    set({ isLoading: true });
     try {
       const currentUser = useUserStore.getState().currentUser;
       if (!currentUser) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
         .from('tickets')
-        .insert([{
+        .insert({
           ...ticket,
           customer_id: currentUser.id,
           organization_id: currentUser.organization_id
-        }])
+        })
         .select()
         .single();
 
       if (error) throw error;
-
+      
       set(state => ({
         tickets: [data, ...state.tickets],
         selectedTicket: data
@@ -159,8 +151,6 @@ export const useTicketStore = create<TicketState>((set, get) => ({
     } catch (error) {
       console.error('Error creating ticket:', error);
       set({ error: error as Error });
-    } finally {
-      set({ isLoading: false });
     }
   },
 
@@ -178,13 +168,10 @@ export const useTicketStore = create<TicketState>((set, get) => ({
 
       if (error) throw error;
 
-      // Update both the tickets list and selected ticket
       set(state => ({
         tickets: state.tickets.map(t => t.id === id ? data : t),
         selectedTicket: state.selectedTicket?.id === id ? data : state.selectedTicket
       }));
-
-      return data;
     } catch (error) {
       console.error('Error updating ticket:', error);
       throw error;

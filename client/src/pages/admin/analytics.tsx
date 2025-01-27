@@ -49,8 +49,7 @@ export default function Analytics() {
                     <div className="flex items-center gap-2">
                       <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-blue-500 rounded-full"
-                          style={{ width: item.value }}
+                          className="h-full bg-blue-500 rounded-full w-[var(--width)]"
                         />
                       </div>
                       <span className="text-sm font-medium">{item.value}</span>

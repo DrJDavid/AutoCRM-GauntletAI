@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import type { TicketStatus, TicketPriority, TicketCategory } from '@/types/database';
 
-const ticketStatusEnum: TicketStatus[] = ['open', 'in_progress', 'resolved', 'closed'];
-const ticketPriorityEnum: TicketPriority[] = ['low', 'medium', 'high', 'urgent'];
-const ticketCategoryEnum: TicketCategory[] = ['account', 'billing', 'technical_issue', 'other'];
+const ticketStatusEnum = ['open', 'in_progress', 'resolved', 'closed'] as const;
+const ticketPriorityEnum = ['low', 'medium', 'high', 'urgent'] as const;
+const ticketCategoryEnum = ['account', 'billing', 'technical_issue', 'other'] as const;
 
 /**
  * Schema for validating ticket creation/update forms
@@ -11,12 +11,8 @@ const ticketCategoryEnum: TicketCategory[] = ['account', 'billing', 'technical_i
  */
 export const ticketSchema = z.object({
   id: z.string().uuid().optional(),
-  title: z
-    .string()
-    .min(1, 'Title is required'),
-  description: z
-    .string()
-    .nullable(),
+  title: z.string().min(1),
+  current_description: z.string().min(1),
   customer_id: z.string().uuid(),
   organization_id: z.string().uuid(),
   status: z.enum(ticketStatusEnum).default('open'),

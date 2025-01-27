@@ -22,10 +22,10 @@ import { RichTextEditor } from '@/components/shared/RichTextEditor';
 import type { TicketFormProps } from '@/types';
 
 const ticketSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().min(1, 'Description is required'),
+  title: z.string().min(1),
+  current_description: z.string().min(1),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
-  tags: z.array(z.string()).optional(),
+  category: z.enum(['account', 'billing', 'technical_issue', 'other']),
 });
 
 export function TicketForm({ onSubmit, initialData }: TicketFormProps) {
@@ -33,9 +33,9 @@ export function TicketForm({ onSubmit, initialData }: TicketFormProps) {
     resolver: zodResolver(ticketSchema),
     defaultValues: {
       title: initialData?.title || '',
-      description: initialData?.description || '',
+      current_description: initialData?.current_description || '',
       priority: initialData?.priority || 'medium',
-      tags: initialData?.tags || [],
+      category: initialData?.category || 'other',
     },
   });
 
@@ -62,7 +62,7 @@ export function TicketForm({ onSubmit, initialData }: TicketFormProps) {
 
         <FormField
           control={form.control}
-          name="description"
+          name="current_description"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Description</FormLabel>
@@ -98,6 +98,30 @@ export function TicketForm({ onSubmit, initialData }: TicketFormProps) {
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="high">High</SelectItem>
                   <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="account">Account</SelectItem>
+                  <SelectItem value="billing">Billing</SelectItem>
+                  <SelectItem value="technical_issue">Technical</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
