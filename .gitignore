@@ -16,6 +16,8 @@ dist-ssr
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
 .idea
 .DS_Store
 *.suo
@@ -29,10 +31,15 @@ dist-ssr
 .env.*
 !.env.example
 
+# Build output
 server/public
 vite.config.ts.*
 *.tar.gz
 *.en
+build/
+.build/
+out/
+coverage/
 
 # Environment files
 .env
@@ -45,3 +52,75 @@ vite.config.ts.*
 .env.test.local
 .env.production.local
 *.env
+
+# TypeScript
+*.tsbuildinfo
+.tscache/
+*.js.map
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+cypress/videos/
+cypress/screenshots/
+
+# Supabase
+.supabase/
+**/supabase/.temp/
+**/supabase/.branches/
+.branches/
+
+# Cache directories
+.cache/
+.mf/
+.rollup.cache/
+.eslintcache
+.stylelintcache
+.prettiercache
+
+# Temporary files
+*.tmp
+*.temp
+.temp/
+tmp/
+temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE specific files
+.idea/
+*.swp
+*.swo
+.vscode-test/
+*.sublime-workspace
+*.sublime-project
+
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+
+# Next.js
+.next/
+.vercel/
+
+# PWA files
+**/public/sw.js
+**/public/workbox-*.js
+**/public/worker-*.js
+**/public/sw.js.map
+**/public/workbox-*.js.map
+**/public/worker-*.js.map

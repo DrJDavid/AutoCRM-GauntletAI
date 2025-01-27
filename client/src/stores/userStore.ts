@@ -89,9 +89,10 @@ export const useUserStore = create<UserState>()(
           }
 
           console.log('Session found, fetching profile...');
+          // First fetch just the profile
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('*, organization:organizations(*)')
+            .select('*')
             .eq('id', session.user.id)
             .single();
 
@@ -103,6 +104,19 @@ export const useUserStore = create<UserState>()(
           if (!profile) {
             console.error('No profile found');
             throw new Error('Profile not found');
+          }
+
+          // Then fetch organization data if needed
+          if (profile.organization_id) {
+            const { data: org, error: orgError } = await supabase
+              .from('organizations')
+              .select('*')
+              .eq('id', profile.organization_id)
+              .single();
+
+            if (!orgError && org) {
+              profile.organization = org;
+            }
           }
 
           console.log('Profile loaded successfully');
@@ -144,14 +158,29 @@ export const useUserStore = create<UserState>()(
 
           // Get user profile with organization data, with retry mechanism
           const profile = await retry(async () => {
+            // First fetch just the profile
             const { data, error: profileError } = await supabase
               .from('profiles')
-              .select('*, organization:organizations(*)')
+              .select('*')
               .eq('id', session.user.id)
               .single();
 
             if (profileError) throw profileError;
             if (!data) throw new Error('Profile not found');
+
+            // Then fetch organization data if needed
+            if (data.organization_id) {
+              const { data: org, error: orgError } = await supabase
+                .from('organizations')
+                .select('*')
+                .eq('id', data.organization_id)
+                .single();
+
+              if (!orgError && org) {
+                data.organization = org;
+              }
+            }
+
             return data;
           });
 
@@ -218,6 +247,8 @@ export const useUserStore = create<UserState>()(
                 email,
                 role,
                 organization_id: organizationId,
+                is_head_admin: role === 'head_admin',
+                is_deleted: false
               },
             ]);
 

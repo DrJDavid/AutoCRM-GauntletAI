@@ -1,94 +1,89 @@
 /**
  * Core type definitions for the application
- * These types are derived from our Supabase database schema
+ * Re-exports database types and defines frontend-specific types
  */
 
-import { Json } from './database';
+import type {
+  Profile as DbProfile,
+  ProfileWithOrganization,
+  Ticket as DbTicket,
+  TicketWithRelations,
+  TicketMessage,
+  TicketMessageWithRelations,
+  TicketAttachment,
+  TicketPriority,
+  TicketCategory,
+  UserRole,
+} from './supabase';
 
-// ==================== User & Profile Types ====================
+// Re-export database types
+export type {
+  DbProfile,
+  ProfileWithOrganization,
+  DbTicket,
+  TicketWithRelations,
+  TicketMessage,
+  TicketMessageWithRelations,
+  TicketAttachment,
+  TicketPriority,
+  TicketCategory,
+  UserRole,
+};
 
-export interface Profile {
-  id: string;
-  email: string;
-  organization_id: string | null;
-  role: 'admin' | 'agent' | 'customer';
-  created_at: string;
-  updated_at: string;
-}
+// ==================== Frontend-Specific Types ====================
 
-// ==================== Ticket Types ====================
-
-export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
-export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
-
-export interface Attachment {
-  id: string;
-  file_name: string;
-  file_size: number;
-  content_type: string;
-  storage_path: string;
-  ticket_id: string | null;
-  comment_id: string | null;
-  organization_id: string;
-  uploaded_by: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Ticket {
-  id: string;
+// Form Types
+export interface CreateTicketForm {
   title: string;
-  description: string | null;
-  status: TicketStatus;
+  description: string;
+  category: TicketCategory;
   priority: TicketPriority;
-  customer_id: string;
-  assigned_agent_id: string | null;
-  organization_id: string;
-  tags: string[] | null;
-  metadata: Json | null;
-  created_at: string;
-  updated_at: string;
-  attachments?: Attachment[];
 }
 
-// Form value types (for creating/updating)
-export type CreateTicketForm = Omit<Ticket, 'id' | 'created_at' | 'updated_at' | 'attachments'>;
-export type UpdateTicketForm = Partial<CreateTicketForm>;
-
-// ==================== Message Types ====================
-
-export interface Message {
-  id: string;
-  ticket_id: string;
-  user_id: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
+export interface UpdateTicketForm {
+  title?: string;
+  description?: string;
+  category?: TicketCategory;
+  priority?: TicketPriority;
+  assigned_agent_id?: string | null;
 }
 
-// ==================== Component Props Types ====================
-
+// Component Props Types
 export interface TicketListProps {
-  tickets: Ticket[];
+  tickets: TicketWithRelations[];
   onTicketSelect: (ticketId: string) => void;
 }
 
 export interface TicketDetailProps {
-  ticket: Ticket;
-  messages: Message[];
-  onStatusChange?: (newStatus: TicketStatus) => void;
+  ticket: TicketWithRelations;
+  onStatusChange?: (newStatus: string) => void;
 }
 
 export interface TicketFormProps {
   onSubmit: (data: CreateTicketForm) => Promise<void>;
-  initialData?: Partial<Ticket>;
+  initialData?: Partial<DbTicket>;
 }
 
-// ==================== Filter Types ====================
-
+// Filter Types
 export interface TicketFilters {
-  status?: TicketStatus[];
+  category?: TicketCategory[];
   priority?: TicketPriority[];
   assignedTo?: string[];
-  tags?: string[];
+  customer?: string[];
 }
+
+// UI State Types
+export interface LoadingState {
+  isLoading: boolean;
+  error: Error | null;
+}
+
+export interface PaginationState {
+  page: number;
+  perPage: number;
+  total: number;
+}
+
+// Utility Types
+export type WithLoadingState<T> = T & LoadingState;
+export type WithPagination<T> = T & { pagination: PaginationState };

@@ -10,42 +10,60 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/components/ui/use-toast';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { Link } from 'wouter';
+import { useOrganizationStore } from '@/stores/organizationStore';
 
 const organizationSchema = z.object({
   name: z.string().min(2, 'Organization name is required'),
   slug: z.string().min(2, 'Organization slug is required')
     .regex(/^[a-z0-9-]+$/, 'Only lowercase letters, numbers, and hyphens are allowed'),
-  industry: z.string().min(2, 'Industry is required'),
-  supportEmail: z.string().email('Please enter a valid email address'),
+  adminEmail: z.string().email('Please enter a valid admin email address'),
+  adminPassword: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
+  confirmPassword: z.string()
+}).refine((data) => data.adminPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 export default function OrganizationNew() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { createOrganization } = useOrganizationStore();
 
   const form = useForm<z.infer<typeof organizationSchema>>({
     resolver: zodResolver(organizationSchema),
     defaultValues: {
       name: '',
       slug: '',
-      industry: '',
-      supportEmail: '',
+      adminEmail: '',
+      adminPassword: '',
+      confirmPassword: '',
     },
   });
 
   const onSubmit = async (values: z.infer<typeof organizationSchema>) => {
     try {
       setIsLoading(true);
-      // TODO: Implement organization creation
-      console.log('Creating organization:', values);
+      
+      await createOrganization({
+        name: values.name,
+        slug: values.slug,
+        adminEmail: values.adminEmail,
+        adminPassword: values.adminPassword,
+      });
 
       toast({
         title: 'Organization created!',
         description: 'Your organization has been created successfully.',
       });
 
-      setLocation('/org/login');
+      // Redirect to admin dashboard since user is already authenticated
+      setLocation('/admin/dashboard');
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -81,83 +99,107 @@ export default function OrganizationNew() {
             </p>
           </div>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Organization Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter organization name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <Card>
+            <CardContent className="pt-6">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Organization Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter organization name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="slug"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Organization Slug</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="your-org-name"
-                        {...field}
-                        onChange={(e) => {
-                          const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-                          field.onChange(value);
-                        }}
-                      />
-                    </FormControl>
-                    <p className="text-sm text-muted-foreground">
-                      This will be used in your organization's URL: autocrm.com/your-org-name
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="slug"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Organization Slug</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="your-org-name"
+                            {...field}
+                            onChange={(e) => {
+                              const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+                              field.onChange(value);
+                            }}
+                          />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">
+                          This will be used in your organization's URL: autocrm.com/your-org-name. Must be unique across all organizations.
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="industry"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Industry</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Technology, Healthcare, etc." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="adminEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Admin Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="admin@your-org.com" {...field} />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">
+                          This email will be used for the organization admin account
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="supportEmail"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Support Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="support@your-org.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="adminPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Admin Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">
+                          Password must be at least 8 characters and contain uppercase, lowercase, number, and special character
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Creating...' : 'Create Organization'}
-              </Button>
-            </form>
-          </Form>
+                  <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Creating...' : 'Create Organization'}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
 
           <p className="px-8 text-center text-sm text-muted-foreground">
             Already have an organization?{' '}
@@ -169,4 +211,4 @@ export default function OrganizationNew() {
       </div>
     </div>
   );
-} 
+}

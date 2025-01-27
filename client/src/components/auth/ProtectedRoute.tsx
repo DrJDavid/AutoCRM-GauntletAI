@@ -3,7 +3,7 @@ import { useLocation, Redirect } from 'wouter';
 import { useUserStore } from '@/stores/userStore';
 import { Loader2 } from 'lucide-react';
 
-type UserRole = 'admin' | 'agent' | 'customer';
+type UserRole = 'head_admin' | 'admin' | 'agent' | 'customer';
 
 interface Props {
   children: ReactNode;
@@ -48,13 +48,29 @@ export function ProtectedRoute({ children, allowedRoles }: Props) {
   }
 
   // Check role-based access
-  if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
-    console.log('Unauthorized access attempt:', {
-      userRole: currentUser.role,
-      allowedRoles,
-      path: location
+  if (allowedRoles) {
+    const hasAccess = allowedRoles.some(role => {
+      if (role === 'admin') {
+        // Allow both 'admin' and 'head_admin' roles when 'admin' is required
+        return currentUser.role === 'admin' || currentUser.role === 'head_admin';
+      }
+      return currentUser.role === role;
     });
-    return <Redirect to="/unauthorized" />;
+
+    if (!hasAccess) {
+      // Redirect to appropriate dashboard based on user role
+      switch (currentUser.role) {
+        case 'head_admin':
+        case 'admin':
+          return <Redirect to="/admin/dashboard" />;
+        case 'agent':
+          return <Redirect to="/agent/dashboard" />;
+        case 'customer':
+          return <Redirect to="/portal" />;
+        default:
+          return <Redirect to="/" />;
+      }
+    }
   }
 
   return <>{children}</>;

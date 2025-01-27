@@ -96,8 +96,10 @@ export default function TeamRegister() {
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
-          role: 'admin',
+          role: 'head_admin',
           organization_id: organization.id,
+          is_head_admin: true,
+          is_deleted: false
         })
         .eq('id', authData.user.id);
 
