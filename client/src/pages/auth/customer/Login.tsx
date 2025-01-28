@@ -36,7 +36,7 @@ export default function CustomerLogin() {
   const search = useSearch();
   const redirectTo = new URLSearchParams(search).get('redirect') || '/portal';
   
-  const { login, currentUser } = useUserStore();
+  const { login } = useUserStore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -65,6 +65,7 @@ export default function CustomerLogin() {
       // Use the redirect URL from the query parameter
       setLocation(decodeURIComponent(redirectTo));
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         variant: 'destructive',
         title: 'Error',

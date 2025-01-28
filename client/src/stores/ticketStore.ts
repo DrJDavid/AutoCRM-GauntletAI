@@ -34,58 +34,25 @@ export const useTicketStore = create<TicketState>((set, get) => ({
   setSelectedTicket: (ticket: Ticket | null) => set({ selectedTicket: ticket as DbTicket | null }),
 
   fetchTickets: async () => {
-    set({ isLoading: true });
+    set({ isLoading: true, error: null });
     try {
-      const currentUser = useUserStore.getState().currentUser;
-      if (!currentUser) throw new Error('User not authenticated');
-
-      let query = supabase
-        .from('tickets')
-        .select(`
-          *,
-          customer:customer_id (email, full_name),
-          assigned_agent:assigned_agent_id (email, full_name),
-          ticket_attachments (id, file_path, uploaded_by, created_at)
-        `);
-
-      // Filter based on user role
-      if (currentUser.role === 'customer') {
-        // Customers see their own tickets
-        query = query.eq('customer_id', currentUser.id);
-      } else if (currentUser.role === 'agent' || currentUser.role === 'admin') {
-        // Agents and admins see tickets from their organization
-        query = query.eq('organization_id', currentUser.organization_id);
-      }
-
-      const filters = get().filters;
-      if (filters.status?.length) {
-        query = query.in('status', filters.status);
-      }
-      if (filters.priority?.length) {
-        query = query.in('priority', filters.priority);
-      }
-      if (filters.assignedTo?.length) {
-        query = query.in('assigned_agent_id', filters.assignedTo);
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false });
-      if (error) throw error;
-
-      set({ tickets: data || [], error: null });
+      const { currentUser } = useUserStore.getState();
       
-      // Update selected ticket if it exists in the new data
-      const selectedTicket = get().selectedTicket;
-      if (selectedTicket) {
-        const updatedSelectedTicket = data?.find(t => t.id === selectedTicket.id);
-        if (updatedSelectedTicket) {
-          set({ selectedTicket: updatedSelectedTicket });
-        }
+      if (!currentUser?.organization_id) {
+        throw new Error('No organization associated with user');
       }
+
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*, customer:customer_id(email), assigned_agent:assigned_agent_id(email)')
+        .eq('organization_id', currentUser.organization_id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      set({ tickets: data, isLoading: false });
     } catch (error) {
+      set({ error: error as Error, isLoading: false });
       console.error('Error fetching tickets:', error);
-      set({ error: error as Error });
-    } finally {
-      set({ isLoading: false });
     }
   },
 

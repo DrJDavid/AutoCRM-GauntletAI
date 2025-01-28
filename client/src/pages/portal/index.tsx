@@ -8,10 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { CreateTicketForm } from "./components/CreateTicketForm";
 import { useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import type { Ticket } from "@/types/database";
+import type { DbTicket } from "@/types/database";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { useLocation } from 'wouter';
 import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/use-toast";
 
 /**
  * CustomerPortal component serves as the main dashboard for customers
@@ -23,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
  */
 export default function CustomerPortal() {
   const { currentUser, isLoading } = useUserStore();
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [tickets, setTickets] = useState<DbTicket[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [createTicketOpen, setCreateTicketOpen] = useState(false);
@@ -31,10 +32,13 @@ export default function CustomerPortal() {
 
   // Fetch tickets for the current user
   useEffect(() => {
+    let mounted = true;
+    
     async function fetchTickets() {
       if (!currentUser?.id) return;
 
       try {
+        setTicketsLoading(true);
         const { data, error } = await supabase
           .from('tickets')
           .select('*')
@@ -42,11 +46,20 @@ export default function CustomerPortal() {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setTickets(data || []);
+        if (mounted) {
+          setTickets(data || []);
+        }
       } catch (error) {
         console.error('Error fetching tickets:', error);
+        toast({
+          title: "Error fetching tickets",
+          description: "There was a problem loading your tickets. Please try again later.",
+          variant: "destructive"
+        });
       } finally {
-        setTicketsLoading(false);
+        if (mounted) {
+          setTicketsLoading(false);
+        }
       }
     }
 
@@ -70,6 +83,7 @@ export default function CustomerPortal() {
       .subscribe();
 
     return () => {
+      mounted = false;
       supabase.removeChannel(channel);
     };
   }, [currentUser?.id]);
@@ -77,7 +91,7 @@ export default function CustomerPortal() {
   // Filter tickets based on search query
   const filteredTickets = tickets.filter(ticket =>
     ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    ticket.current_description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Calculate ticket statistics
@@ -110,20 +124,29 @@ export default function CustomerPortal() {
     other: 'bg-gray-500/10 text-gray-500',
   } as const;
 
+  // Show loading state while authentication is being checked
   if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
-  if (!currentUser) {
-    return null;
+  // Ensure user is authenticated and is a customer
+  if (!currentUser || currentUser.role !== 'customer') {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+          <p className="text-gray-600">You must be logged in as a customer to view this page.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <PortalLayout>
+    <>
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Support Portal</h1>
@@ -224,21 +247,21 @@ export default function CustomerPortal() {
                     </div>
                     <div className="flex flex-col gap-2 items-end">
                       <div className="flex gap-2">
-                        <Badge variant="secondary" className={priorityColors[ticket.priority]}>
-                          {ticket.priority}
+                        <Badge variant="secondary" className={priorityColors[ticket.priority] || priorityColors.low}>
+                          {ticket.priority?.replace('_', ' ') || 'low'}
                         </Badge>
-                        <Badge variant="secondary" className={statusColors[ticket.status]}>
-                          {ticket.status.replace('_', ' ')}
+                        <Badge variant="secondary" className={statusColors[ticket.status] || statusColors.open}>
+                          {ticket.status?.replace('_', ' ') || 'open'}
                         </Badge>
                       </div>
-                      <Badge variant="secondary" className={categoryColors[ticket.category]}>
-                        {ticket.category.replace('_', ' ')}
+                      <Badge variant="secondary" className={categoryColors[ticket.category] || categoryColors.other}>
+                        {ticket.category?.replace('_', ' ') || 'other'}
                       </Badge>
                     </div>
                   </div>
-                  {ticket.description && (
+                  {ticket.current_description && (
                     <p className="text-gray-600 mt-2 line-clamp-2">
-                      {ticket.description}
+                      {ticket.current_description}
                     </p>
                   )}
                 </CardHeader>
@@ -253,6 +276,6 @@ export default function CustomerPortal() {
           </div>
         )}
       </div>
-    </PortalLayout>
+    </>
   );
 }

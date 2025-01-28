@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState, FC } from 'react';
 import { useLocation, Redirect } from 'wouter';
 import { useUserStore } from '@/stores/userStore';
 import { Loader2 } from 'lucide-react';
@@ -10,21 +10,24 @@ interface Props {
   allowedRoles?: UserRole[];
 }
 
-export function ProtectedRoute({ children, allowedRoles }: Props) {
+export const ProtectedRoute: FC<Props> = ({ children, allowedRoles }) => {
   const [location] = useLocation();
   const { currentUser, isLoading, checkAuth } = useUserStore();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Run an auth check when the component mounts
   useEffect(() => {
-    // Only check auth if we don't have a user and aren't already loading
-    if (!currentUser && !isLoading && !useUserStore.getState().currentUser) {
-      checkAuth();
-    }
+    const initAuth = async () => {
+      if (!currentUser && !isLoading) {
+        await checkAuth();
+      }
+      setIsInitialLoad(false);
+    };
+
+    initAuth();
   }, [checkAuth, currentUser, isLoading]);
 
-  // Show loading state while checking auth
-  if (isLoading) {
+  // Show loading state during initial load or auth check
+  if (isInitialLoad || isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -51,20 +54,20 @@ export function ProtectedRoute({ children, allowedRoles }: Props) {
   if (allowedRoles) {
     const hasAccess = allowedRoles.some(role => {
       if (role === 'admin') {
-        // Allow both 'admin' and 'head_admin' roles when 'admin' is required
+        // Allow both admin and head_admin to access admin routes
         return currentUser.role === 'admin' || currentUser.role === 'head_admin';
       }
       return currentUser.role === role;
     });
 
     if (!hasAccess) {
-      // Redirect to appropriate dashboard based on user role
+      // Redirect to appropriate home page based on user role
       switch (currentUser.role) {
         case 'head_admin':
         case 'admin':
-          return <Redirect to="/admin/dashboard" />;
+          return <Redirect to="/admin" />;
         case 'agent':
-          return <Redirect to="/agent/dashboard" />;
+          return <Redirect to="/agent" />;
         case 'customer':
           return <Redirect to="/portal" />;
         default:
@@ -74,4 +77,4 @@ export function ProtectedRoute({ children, allowedRoles }: Props) {
   }
 
   return <>{children}</>;
-}
+};

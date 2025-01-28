@@ -13,7 +13,11 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "test:invite": "tsx scripts/test-customer-invite.ts"
+    "test:invite": "tsx scripts/test-customer-invite.ts",
+    "supabase:push": "npx supabase db push --linked",
+    "supabase:types": "npx supabase gen types typescript --project-id lhrslwpgyghhbfedytzv --schema public > src/types/database.ts",
+    "generate:types": "npx supabase gen types typescript --local > src/types/supabase.ts",
+    "create:test-users": "tsx scripts/create-test-users.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -70,6 +74,7 @@
     "react-hook-form": "^7.53.1",
     "react-icons": "^5.4.0",
     "react-resizable-panels": "^2.1.4",
+    "react-router-dom": "^6.28.2",
     "recharts": "^2.13.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
@@ -103,7 +108,7 @@
     "jsdom": "^26.0.0",
     "msw": "^2.7.0",
     "postcss": "^8.4.47",
-    "supabase": "^2.6.8",
+    "supabase": "^2.9.6",
     "tailwindcss": "^3.4.14",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.1",

@@ -262,17 +262,21 @@ export type DbTicket = {
   created_at: string;
   updated_at: string;
   is_deleted: boolean;
-  // Relationships
-  customer: { email: string; full_name: string };
-  assigned_agent: { email: string; full_name: string } | null;
+  customer?: DbProfile;
+  assigned_agent?: DbProfile;
+  attachments?: DbAttachment[];
+  tags: string[] | null;
+  metadata: Record<string, unknown> | null;
 };
 
 export type DbProfile = {
   id: string;
   email: string;
-  organization_id: string;
   role: 'head_admin' | 'admin' | 'agent' | 'customer';
+  organization_id: string | null;
   is_head_admin: boolean;
+  full_name: string | null;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
   is_deleted: boolean;
@@ -288,3 +292,87 @@ export interface TicketFilters {
 
 // Add these to existing enums
 export type UserRole = 'head_admin' | 'admin' | 'agent' | 'customer';
+
+export type DbTicketMessage = {
+  id: string;
+  ticket_id: string;
+  author_id: string;
+  content: string;
+  is_internal: boolean;
+  metadata: Json | null;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+  author?: DbProfile;
+};
+
+export type DbAttachment = {
+  id: string;
+  file_name: string;
+  file_size: number;
+  storage_path: string;
+  content_type: string;
+  ticket_id: string;
+  message_id: string | null;
+  organization_id: string;
+  uploaded_by: string;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+};
+
+export type DbOrganization = {
+  id: string;
+  name: string;
+  slug: string;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+  settings: {
+    business_hours?: {
+      start: string;
+      end: string;
+      timezone: string;
+      days: number[];
+    }
+    support_channels?: string[];
+    notification_preferences?: {
+      email?: boolean;
+      in_app?: boolean;
+      slack?: boolean;
+    }
+  } | null;
+};
+
+export type DbTeam = {
+  id: string;
+  name: string;
+  organization_id: string;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+  settings: Json | null;
+};
+
+export type DbTeamMember = {
+  id: string;
+  team_id: string;
+  profile_id: string;
+  role: string;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+};
+
+export type DbInvite = {
+  id: string;
+  email: string;
+  organization_id: string;
+  role: DbProfile['role'];
+  token: string;
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+  accepted_at: string | null;
+};

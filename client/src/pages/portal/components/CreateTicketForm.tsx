@@ -42,7 +42,6 @@ export function CreateTicketForm({ onSuccess }: CreateTicketFormProps) {
       title: '',
       description: '',
       priority: 'medium',
-      category: 'other',
     },
   });
 
@@ -54,7 +53,9 @@ export function CreateTicketForm({ onSuccess }: CreateTicketFormProps) {
 
       // Log the data being sent to Supabase
       const ticketData = {
-        ...data,
+        title: data.title,
+        description: data.description,
+        priority: data.priority,
         customer_id: currentUser.id,
         organization_id: currentUser.organization_id,
         status: 'open',
@@ -169,32 +170,7 @@ export function CreateTicketForm({ onSuccess }: CreateTicketFormProps) {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="technical_issue">Technical Issue</SelectItem>
-                  <SelectItem value="billing">Billing</SelectItem>
-                  <SelectItem value="account">Account</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         <FileUpload
-          value={files}
           onChange={setFiles}
           maxFiles={5}
           maxSize={5 * 1024 * 1024} // 5MB
