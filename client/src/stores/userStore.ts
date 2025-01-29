@@ -51,94 +51,40 @@ export const useUserStore = create<UserState>()(
       error: null,
 
       checkAuth: async () => {
-        // Prevent multiple simultaneous auth checks
-        if (authCheckInProgress) {
-          console.log('Auth check already in progress, skipping...');
-          return get().currentUser;
-        }
+        if (authCheckInProgress) return null;
+        authCheckInProgress = true;
 
         try {
-          authCheckInProgress = true;
-          console.log('Starting auth check...');
-          
-          // Don't set loading if we already have a user
-          const currentUser = get().currentUser;
-          if (!currentUser) {
-            set({ isLoading: true, error: null });
-          } else {
-            console.log('User already exists in store, skipping auth check');
-            return currentUser;
-          }
-          
           const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-          
-          if (sessionError) {
-            console.error('Session error:', sessionError);
-            throw sessionError;
-          }
+          if (sessionError) throw sessionError;
 
           if (!session?.user) {
-            console.log('No active session');
-            set({ 
-              currentUser: null, 
-              isAuthenticated: false, 
-              isLoading: false,
-              error: null 
-            });
+            set({ currentUser: null, isAuthenticated: false });
             return null;
           }
 
-          console.log('Session found, fetching profile...');
-          // First fetch just the profile
+          // Get profile data
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select(`
-              *,
-              organization:organization_id (
-                id,
-                name,
-                slug
-              )
-            `)
+            .select('*')
             .eq('id', session.user.id)
             .single();
 
-          if (profileError || !profile) {
-            console.error('No profile found');
-            throw new Error('Profile not found');
-          }
+          if (profileError) throw profileError;
 
-          // Convert to DbProfile
-          const dbProfile: DbProfile = {
-            id: profile.id,
-            email: profile.email,
-            organization_id: profile.organization_id,
-            role: profile.role,
-            is_head_admin: profile.is_head_admin || false,
-            full_name: profile.full_name,
-            avatar_url: profile.avatar_url,
-            created_at: profile.created_at,
-            updated_at: profile.updated_at,
-            is_deleted: false // Set a default value since the column doesn't exist
-          };
-
-          console.log('Profile loaded successfully');
           set({
-            currentUser: dbProfile,
+            currentUser: profile,
             isAuthenticated: true,
-            isLoading: false,
             error: null
           });
 
-          return dbProfile;
-
+          return profile;
         } catch (error) {
           console.error('Auth check failed:', error);
-          set({ 
-            currentUser: null, 
+          set({
+            currentUser: null,
             isAuthenticated: false,
-            isLoading: false,
-            error: error instanceof Error ? error : new Error('Authentication failed') 
+            error: error instanceof Error ? error : new Error('Auth check failed')
           });
           return null;
         } finally {
@@ -212,9 +158,19 @@ export const useUserStore = create<UserState>()(
           }
 
           // Verify user type matches if type is provided
-          if (type && profile.role !== type) {
-            console.error('Invalid login type:', { expected: type, found: profile.role });
-            throw new Error(`Invalid login type. This login is for ${type} accounts only.`);
+          if (type) {
+            const isTeamMember = ['head_admin', 'admin', 'agent'].includes(profile.role);
+            const isCustomer = profile.role === 'customer';
+
+            if (type === 'team' && !isTeamMember) {
+              throw new Error('This login is for team members only.');
+            }
+            if (type === 'customer' && !isCustomer) {
+              throw new Error('This login is for customers only.');
+            }
+            if (type === 'agent' && profile.role !== 'agent') {
+              throw new Error('This login is for agents only.');
+            }
           }
 
           // Update store state
@@ -227,7 +183,6 @@ export const useUserStore = create<UserState>()(
           });
 
           return profile;
-
         } catch (error) {
           console.error('Login process failed:', error);
           // Sign out on error to ensure clean state
@@ -243,60 +198,33 @@ export const useUserStore = create<UserState>()(
       },
 
       signUp: async (email: string, password: string, role: string, organizationId?: string) => {
+        set({ isLoading: true, error: null });
         try {
-          set({ isLoading: true, error: null });
-
-          const { data: { session }, error: signUpError } = await supabase.auth.signUp({
+          const { data, error } = await supabase.auth.signUp({
             email,
             password,
           });
 
-          if (signUpError) throw signUpError;
-          if (!session) throw new Error('No session after signup');
+          if (error) throw error;
+          if (!data.user) throw new Error('No user data after signup');
 
+          // Create profile
           const { error: profileError } = await supabase
             .from('profiles')
             .insert([
               {
-                id: session.user.id,
+                id: data.user.id,
                 email,
                 role,
                 organization_id: organizationId,
-                is_head_admin: role === 'head_admin',
-                full_name: null,
-                avatar_url: null,
-                is_deleted: false
               },
             ]);
 
           if (profileError) throw profileError;
 
-          const { data: profile, error: fetchError } = await supabase
-            .from('profiles')
-            .select(`
-              *,
-              organization:organization_id (
-                id,
-                name,
-                slug
-              )
-            `)
-            .eq('id', session.user.id)
-            .single();
-
-          if (fetchError) throw fetchError;
-
-          set({
-            currentUser: profile as DbProfile,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null
-          });
+          set({ isLoading: false });
         } catch (error) {
-          console.error('Signup failed:', error);
           set({
-            currentUser: null,
-            isAuthenticated: false,
             isLoading: false,
             error: error instanceof Error ? error : new Error('Signup failed')
           });

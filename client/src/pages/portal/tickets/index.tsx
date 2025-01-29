@@ -1,8 +1,9 @@
-import { FC } from 'react';
+import { FC, useEffect } from 'react';
 import { useTicketStore } from '@/stores/ticketStore';
-import { TicketList } from '@/components/tickets/TicketList';
+import { TicketList } from '@/features/tickets';
 import { PageHeader } from '@/components/ui';
 import { useUserStore } from '@/stores/userStore';
+import { useLocation } from 'wouter';
 
 const CustomerTickets: FC = () => {
   const { currentUser } = useUserStore();

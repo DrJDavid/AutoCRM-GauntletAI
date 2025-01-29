@@ -1,14 +1,15 @@
 import { useEffect } from 'react';
 import { useRoute } from 'wouter';
 import { useTicketStore } from '@/stores/ticketStore';
-import { TicketDetail } from '@/components/tickets/TicketDetail';
+import { TicketDetail } from '../components/TicketDetail';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
 import { Link } from 'wouter';
+import type { Ticket, TicketMessage, TicketStatus } from '@/types';
 
 export default function TicketDetailPage() {
   const [match, params] = useRoute('/tickets/:id');
-  const { tickets, selectedTicket, fetchTickets, setSelectedTicket } = useTicketStore();
+  const { tickets, selectedTicket, fetchTickets, setSelectedTicket, updateTicket } = useTicketStore();
 
   useEffect(() => {
     if (!tickets.length) {
@@ -25,13 +26,12 @@ export default function TicketDetailPage() {
     }
   }, [params?.id, tickets, setSelectedTicket]);
 
-  const handleStatusChange = (newStatus: string) => {
+  const handleStatusChange = async (newStatus: TicketStatus) => {
     if (selectedTicket) {
-      // Update the local state
-      setSelectedTicket({
-        ...selectedTicket,
+      await updateTicket(selectedTicket.id, {
         status: newStatus,
-        updatedAt: new Date().toISOString()
+        description: selectedTicket.description,
+        updated_at: new Date().toISOString()
       });
       
       // Refresh tickets to get the latest data
@@ -43,25 +43,25 @@ export default function TicketDetailPage() {
     return <div>Loading...</div>;
   }
 
-  // Mock messages for demo
-  const messages = [
+  // Create properly typed mock messages
+  const messages: TicketMessage[] = [
     {
       id: '1',
-      ticketId: selectedTicket.id,
-      userId: 'customer@example.com',
-      content: 'Initial ticket description',
-      isInternal: false,
-      attachments: [],
-      createdAt: selectedTicket.createdAt,
+      ticket_id: selectedTicket.id,
+      author_id: 'customer@example.com',
+      content: selectedTicket.description || '',
+      is_internal: false,
+      metadata: null,
+      created_at: selectedTicket.created_at
     },
     {
       id: '2',
-      ticketId: selectedTicket.id,
-      userId: 'agent@example.com',
+      ticket_id: selectedTicket.id,
+      author_id: 'agent@example.com',
       content: 'Internal note about the ticket',
-      isInternal: true,
-      attachments: [],
-      createdAt: selectedTicket.updatedAt,
+      is_internal: true,
+      metadata: null,
+      created_at: selectedTicket.created_at
     },
   ];
 
@@ -83,4 +83,4 @@ export default function TicketDetailPage() {
       />
     </div>
   );
-}
+} 

@@ -34,7 +34,7 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { currentUser, logout } = useUserStore();
 
   const handleLogout = async () => {

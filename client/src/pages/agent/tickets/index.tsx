@@ -1,10 +1,11 @@
 import { FC } from 'react';
 import { useTicketStore } from '@/stores/ticketStore';
-import { TicketList } from '@/components/tickets/TicketList';
+import { TicketList } from '@/features/tickets';
 import { PageHeader } from '@/components/ui/page-header';
+import { useLocation } from 'wouter';
 
 const AgentTickets: FC = () => {
-  const { tickets, loading } = useTicketStore();
+  const { tickets, isLoading } = useTicketStore();
 
   return (
     <div className="space-y-6">
@@ -15,7 +16,7 @@ const AgentTickets: FC = () => {
       
       <TicketList 
         tickets={tickets}
-        loading={loading}
+        loading={isLoading}
         showAssignee={false}
         showCustomer={true}
       />

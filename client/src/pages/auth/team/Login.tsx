@@ -52,37 +52,21 @@ export default function TeamLogin() {
   const onSubmit = async (values: z.infer<typeof teamLoginSchema>) => {
     try {
       setIsLoading(true);
-      
-      // Wait for login and profile load to complete
-      const profile = await login({
+      await login({
         type: 'team',
         email: values.email,
         password: values.password,
-        organizationSlug: values.organizationSlug
       });
 
-      if (!profile) {
-        throw new Error('Failed to load user profile');
-      }
-
-      // Redirect based on role immediately using the returned profile
-      switch (profile.role) {
-        case 'admin':
-          setLocation('/admin/dashboard');
-          break;
-        case 'agent':
-          setLocation('/agent/dashboard');
-          break;
-        default:
-          setLocation('/unauthorized');
-      }
-
-      // Show success toast after redirect
       toast({
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
       });
 
+      // Redirect based on role
+      const user = useUserStore.getState().currentUser;
+      const redirectPath = user?.role === 'agent' ? '/agent' : '/admin';
+      setLocation(redirectPath);
     } catch (error) {
       console.error('Login error:', error);
       toast({

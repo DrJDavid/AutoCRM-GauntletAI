@@ -127,155 +127,156 @@ export default function CustomerPortal() {
   // Show loading state while authentication is being checked
   if (isLoading) {
     return (
-      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+        <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
     );
   }
 
   // Ensure user is authenticated and is a customer
   if (!currentUser || currentUser.role !== 'customer') {
     return (
-      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
-          <p className="text-gray-600">You must be logged in as a customer to view this page.</p>
+        <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+            <p className="text-gray-600">You must be logged in as a customer to view this page.</p>
+          </div>
         </div>
-      </div>
     );
   }
 
   return (
     <>
-      <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Support Portal</h1>
+            <p className="text-gray-500">Welcome back, {currentUser.email}</p>
+          </div>
+          <Dialog open={createTicketOpen} onOpenChange={setCreateTicketOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New Ticket
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Create New Support Ticket</DialogTitle>
+              </DialogHeader>
+              <CreateTicketForm onSuccess={() => setCreateTicketOpen(false)} />
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
+          {/* Tickets Overview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Total Tickets</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{tickets.length}</div>
+              <p className="text-gray-500">All time</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Open Tickets</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{openTickets.length}</div>
+              <p className="text-gray-500">Awaiting resolution</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Resolved Tickets</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{resolvedTickets.length}</div>
+              <p className="text-gray-500">Successfully closed</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Search and Tickets List */}
         <div>
-          <h1 className="text-3xl font-bold">Support Portal</h1>
-          <p className="text-gray-500">Welcome back, {currentUser.email}</p>
-        </div>
-        <Dialog open={createTicketOpen} onOpenChange={setCreateTicketOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Ticket
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Create New Support Ticket</DialogTitle>
-            </DialogHeader>
-            <CreateTicketForm onSuccess={() => setCreateTicketOpen(false)} />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
-        {/* Tickets Overview */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Total Tickets</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{tickets.length}</div>
-            <p className="text-gray-500">All time</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Open Tickets</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{openTickets.length}</div>
-            <p className="text-gray-500">Awaiting resolution</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Resolved Tickets</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{resolvedTickets.length}</div>
-            <p className="text-gray-500">Successfully closed</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search and Tickets List */}
-      <div>
-        <div className="flex items-center space-x-2 mb-4">
-          <div className="relative flex-grow">
-            <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-            <Input
-              type="search"
-              placeholder="Search tickets..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSearchQuery("")}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          )}
-        </div>
-
-        {ticketsLoading ? (
-          <div className="flex justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {filteredTickets.map((ticket) => (
-              <Card 
-                key={ticket.id} 
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => handleTicketClick(ticket.id)}
+          <div className="flex items-center space-x-2 mb-4">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <Input
+                type="search"
+                placeholder="Search tickets..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSearchQuery("")}
               >
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{ticket.title}</CardTitle>
-                      <p className="text-sm text-gray-500">
-                        Created on {new Date(ticket.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-2 items-end">
-                      <div className="flex gap-2">
-                        <Badge variant="secondary" className={priorityColors[ticket.priority] || priorityColors.low}>
-                          {ticket.priority?.replace('_', ' ') || 'low'}
-                        </Badge>
-                        <Badge variant="secondary" className={statusColors[ticket.status] || statusColors.open}>
-                          {ticket.status?.replace('_', ' ') || 'open'}
-                        </Badge>
-                      </div>
-                      <Badge variant="secondary" className={categoryColors[ticket.category] || categoryColors.other}>
-                        {ticket.category?.replace('_', ' ') || 'other'}
-                      </Badge>
-                    </div>
-                  </div>
-                  {ticket.current_description && (
-                    <p className="text-gray-600 mt-2 line-clamp-2">
-                      {ticket.current_description}
-                    </p>
-                  )}
-                </CardHeader>
-              </Card>
-            ))}
-
-            {filteredTickets.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No tickets found</p>
-              </div>
+                <X className="h-5 w-5" />
+              </Button>
             )}
           </div>
-        )}
-      </div>
+
+          {ticketsLoading ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {filteredTickets.map((ticket) => (
+                <Card 
+                  key={ticket.id} 
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => handleTicketClick(ticket.id)}
+                >
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">{ticket.title}</CardTitle>
+                        <p className="text-sm text-gray-500">
+                          Created on {new Date(ticket.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 items-end">
+                        <div className="flex gap-2">
+                          <Badge variant="secondary" className={priorityColors[ticket.priority] || priorityColors.low}>
+                            {ticket.priority?.replace('_', ' ') || 'low'}
+                          </Badge>
+                          <Badge variant="secondary" className={statusColors[ticket.status] || statusColors.open}>
+                            {ticket.status?.replace('_', ' ') || 'open'}
+                          </Badge>
+                        </div>
+                        <Badge variant="secondary" className={categoryColors[ticket.category] || categoryColors.other}>
+                          {ticket.category?.replace('_', ' ') || 'other'}
+                        </Badge>
+                      </div>
+                    </div>
+                    {ticket.current_description && (
+                      <p className="text-gray-600 mt-2 line-clamp-2">
+                        {ticket.current_description}
+                      </p>
+                    )}
+                  </CardHeader>
+                </Card>
+              ))}
+
+              {filteredTickets.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No tickets found</p>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
     </>
   );
 }

@@ -4,38 +4,54 @@
  */
 
 import type {
-  Profile as DbProfile,
-  ProfileWithOrganization,
-  Ticket as DbTicket,
-  TicketWithRelations,
+  Profile,
+  Ticket,
   TicketMessage,
-  TicketMessageWithRelations,
-  TicketAttachment,
+  Attachment,
   TicketPriority,
   TicketCategory,
+  TicketStatus,
   UserRole,
-} from './supabase';
+  Organization,
+} from './database';
 
 // Re-export database types
 export type {
-  DbProfile,
-  ProfileWithOrganization,
-  DbTicket,
-  TicketWithRelations,
+  Profile,
+  Ticket,
   TicketMessage,
-  TicketMessageWithRelations,
-  TicketAttachment,
+  Attachment,
   TicketPriority,
   TicketCategory,
+  TicketStatus,
   UserRole,
+  Organization,
 };
+
+// ==================== Relationship Types ====================
+
+export interface ProfileWithOrganization extends Profile {
+  organization: Organization;
+}
+
+export interface TicketWithRelations extends Omit<Ticket, 'customer' | 'assigned_agent'> {
+  customer: Profile;
+  assigned_agent?: Profile;
+  messages: TicketMessage[];
+  attachments?: Attachment[];
+}
+
+export interface TicketMessageWithRelations extends TicketMessage {
+  author: Profile;
+  attachments?: Attachment[];
+}
 
 // ==================== Frontend-Specific Types ====================
 
 // Form Types
 export interface CreateTicketForm {
   title: string;
-  current_description: string;
+  description: string;
   category: TicketCategory;
   priority: TicketPriority;
 }
@@ -45,6 +61,7 @@ export interface UpdateTicketForm {
   description?: string;
   category?: TicketCategory;
   priority?: TicketPriority;
+  status?: TicketStatus;
   assigned_agent_id?: string | null;
 }
 
@@ -56,18 +73,19 @@ export interface TicketListProps {
 
 export interface TicketDetailProps {
   ticket: TicketWithRelations;
-  onStatusChange?: (newStatus: string) => void;
+  onStatusChange?: (newStatus: TicketStatus) => void;
 }
 
 export interface TicketFormProps {
   onSubmit: (data: CreateTicketForm) => Promise<void>;
-  initialData?: Partial<DbTicket>;
+  initialData?: Partial<Ticket>;
 }
 
 // Filter Types
 export interface TicketFilters {
   category?: TicketCategory[];
   priority?: TicketPriority[];
+  status?: TicketStatus[];
   assignedTo?: string[];
   customer?: string[];
 }

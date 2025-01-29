@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useUserStore } from '@/stores/userStore';
 import { useTicketStore } from '@/stores/ticketStore';
 import { TicketForm } from '@/components/tickets/TicketForm';
-import { TicketList } from '@/components/tickets/TicketList';
+import { TicketList } from '@/features/tickets';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLocation } from 'wouter';
 import {
@@ -11,6 +11,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 
 export default function CustomerPortal() {
   const [, setLocation] = useLocation();
@@ -24,15 +25,15 @@ export default function CustomerPortal() {
   }, [currentUser, fetchTickets]);
 
   const customerTickets = tickets.filter(
-    (ticket) => ticket.customerId === currentUser?.id
+    (ticket) => ticket.customer_id === currentUser?.id
   );
 
   const handleCreateTicket = async (data: any) => {
     try {
       await createTicket({
         ...data,
-        customerId: currentUser!.id,
-        status: 'new',
+        customer_id: currentUser!.id,
+        status: 'open',
       });
       setLocation('/customer-portal');
     } catch (error) {

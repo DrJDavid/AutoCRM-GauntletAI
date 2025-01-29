@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useTicketStore } from '@/stores/ticketStore';
+import { TicketList } from '@/features/tickets';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TicketList } from '@/components/tickets/TicketList';
 import { useLocation } from 'wouter';
 import {
   BarChart,
@@ -28,9 +28,8 @@ export default function Dashboard() {
   };
 
   const statusData = [
-    { name: 'New', count: tickets.filter(t => t.status === 'new').length },
     { name: 'Open', count: tickets.filter(t => t.status === 'open').length },
-    { name: 'Pending', count: tickets.filter(t => t.status === 'pending').length },
+    { name: 'In Progress', count: tickets.filter(t => t.status === 'in_progress').length },
     { name: 'Resolved', count: tickets.filter(t => t.status === 'resolved').length },
     { name: 'Closed', count: tickets.filter(t => t.status === 'closed').length },
   ];

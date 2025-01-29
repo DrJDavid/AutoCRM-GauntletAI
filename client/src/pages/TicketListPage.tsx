@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useTicketStore } from '@/stores/ticketStore';
-import { TicketList } from '@/components/tickets/TicketList';
+import { TicketList } from '@/features/tickets';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import type { TicketFilters } from '@/types/database';
+import type { TicketFilters, TicketStatus, TicketPriority } from '@/types';
 
 export default function TicketListPage() {
   const [, setLocation] = useLocation();
@@ -24,20 +24,13 @@ export default function TicketListPage() {
     fetchTickets();
   }, [fetchTickets]);
 
-  const handleFilterChange = (key: keyof TicketFilters, value: string[]) => {
+  const handleFilterChange = (key: keyof TicketFilters, value: TicketStatus | TicketPriority | undefined) => {
     const newFilters: TicketFilters = { 
       ...activeFilters, 
-      [key]: value 
+      [key]: value ? [value] : undefined 
     };
     setActiveFilters(newFilters);
     setFilters(newFilters);
-  };
-
-  const handleStatusFilter = (value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      status: value ? [value] : []
-    }));
   };
 
   const filteredTickets = tickets.filter((ticket) =>
@@ -65,14 +58,15 @@ export default function TicketListPage() {
             </div>
             <div className="flex gap-2">
               <Select
-                onValueChange={(value) => 
-                  handleFilterChange('status', value ? [value] : [])
+                onValueChange={(value: TicketStatus | '') => 
+                  handleFilterChange('status', value || undefined)
                 }
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="">All</SelectItem>
                   <SelectItem value="open">Open</SelectItem>
                   <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="resolved">Resolved</SelectItem>
@@ -81,14 +75,15 @@ export default function TicketListPage() {
               </Select>
 
               <Select
-                onValueChange={(value) =>
-                  handleFilterChange('priority', value ? [value] : [])
+                onValueChange={(value: TicketPriority | '') =>
+                  handleFilterChange('priority', value || undefined)
                 }
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Filter by priority" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="">All</SelectItem>
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="high">High</SelectItem>

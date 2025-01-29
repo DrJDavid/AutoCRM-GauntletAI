@@ -38,16 +38,21 @@ export const ProtectedRoute: FC<Props> = ({ children, allowedRoles }) => {
   // If not logged in, redirect to appropriate login page based on the current path
   if (!currentUser) {
     const loginPaths = {
-      '/admin': '/org/login',
+      '/admin': '/auth/team/login',
       '/agent': '/auth/agent/login',
       '/portal': '/auth/customer/login'
     };
 
-    const loginPath = Object.entries(loginPaths).find(([prefix]) => 
+    // Find the matching login path based on the current location
+    const matchingPath = Object.entries(loginPaths).find(([prefix]) => 
       location.startsWith(prefix)
-    )?.[1] || '/auth/customer/login';
+    );
 
-    return <Redirect to={`${loginPath}?redirect=${encodeURIComponent(location)}`} />;
+    const loginPath = matchingPath ? matchingPath[1] : '/login';
+    const redirectParam = encodeURIComponent(location);
+    
+    console.log('Redirecting to:', `${loginPath}?redirect=${redirectParam}`);
+    return <Redirect to={`${loginPath}?redirect=${redirectParam}`} />;
   }
 
   // Check role-based access

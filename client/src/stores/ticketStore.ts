@@ -1,12 +1,11 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
-import type { TicketFilters } from '@/types';
+import type { TicketFilters, Ticket } from '@/types';
 import { useUserStore } from './userStore';
-import type { DbTicket, Ticket } from '@/types/database';
 
 interface TicketState {
-  tickets: DbTicket[];
-  selectedTicket: DbTicket | null;
+  tickets: Ticket[];
+  selectedTicket: Ticket | null;
   filters: {
     status?: string[];
     priority?: string[];
@@ -31,7 +30,7 @@ export const useTicketStore = create<TicketState>((set, get) => ({
   isLoading: false,
   error: null,
   setFilters: (filters: TicketFilters) => set({ filters }),
-  setSelectedTicket: (ticket: Ticket | null) => set({ selectedTicket: ticket as DbTicket | null }),
+  setSelectedTicket: (ticket: Ticket | null) => set({ selectedTicket: ticket }),
 
   fetchTickets: async () => {
     set({ isLoading: true, error: null });
@@ -44,12 +43,23 @@ export const useTicketStore = create<TicketState>((set, get) => ({
 
       const { data, error } = await supabase
         .from('tickets')
-        .select('*, customer:customer_id(email), assigned_agent:assigned_agent_id(email)')
+        .select(`
+          *,
+          customer:customer_id(email),
+          assigned_agent:assigned_agent_id(email)
+        `)
         .eq('organization_id', currentUser.organization_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      set({ tickets: data, isLoading: false });
+      
+      // Transform the data to match our Ticket type
+      const tickets = data.map(ticket => ({
+        ...ticket,
+        description: ticket.current_description,
+      }));
+
+      set({ tickets, isLoading: false });
     } catch (error) {
       set({ error: error as Error, isLoading: false });
       console.error('Error fetching tickets:', error);
@@ -103,6 +113,7 @@ export const useTicketStore = create<TicketState>((set, get) => ({
         .from('tickets')
         .insert({
           ...ticket,
+          current_description: ticket.description,
           customer_id: currentUser.id,
           organization_id: currentUser.organization_id
         })
@@ -111,9 +122,15 @@ export const useTicketStore = create<TicketState>((set, get) => ({
 
       if (error) throw error;
       
+      // Transform the data to match our Ticket type
+      const newTicket = {
+        ...data,
+        description: data.current_description,
+      };
+
       set(state => ({
-        tickets: [data, ...state.tickets],
-        selectedTicket: data
+        tickets: [newTicket, ...state.tickets],
+        selectedTicket: newTicket
       }));
     } catch (error) {
       console.error('Error creating ticket:', error);
@@ -123,21 +140,30 @@ export const useTicketStore = create<TicketState>((set, get) => ({
 
   updateTicket: async (id, updates) => {
     try {
+      const dbUpdates = {
+        ...updates,
+        current_description: updates.description,
+        updated_at: new Date().toISOString()
+      };
+
       const { data, error } = await supabase
         .from('tickets')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
+        .update(dbUpdates)
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
 
+      // Transform the data to match our Ticket type
+      const updatedTicket = {
+        ...data,
+        description: data.current_description,
+      };
+
       set(state => ({
-        tickets: state.tickets.map(t => t.id === id ? data : t),
-        selectedTicket: state.selectedTicket?.id === id ? data : state.selectedTicket
+        tickets: state.tickets.map(t => t.id === id ? updatedTicket : t),
+        selectedTicket: state.selectedTicket?.id === id ? updatedTicket : state.selectedTicket
       }));
     } catch (error) {
       console.error('Error updating ticket:', error);
