@@ -50,9 +50,11 @@ export const TicketList: FC<TicketListProps> = ({
           <div className="flex justify-between items-start mb-2">
             <div>
               <h3 className="font-medium">{ticket.title}</h3>
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {ticket.description}
-              </p>
+              {ticket.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {ticket.description}
+                </p>
+              )}
             </div>
             <div className="flex gap-2">
               <Badge
@@ -64,7 +66,7 @@ export const TicketList: FC<TicketListProps> = ({
                     : 'outline'
                 }
               >
-                {ticket.status}
+                {ticket.status.replace('_', ' ')}
               </Badge>
               <Badge
                 variant={
@@ -77,7 +79,6 @@ export const TicketList: FC<TicketListProps> = ({
               >
                 {ticket.priority}
               </Badge>
-              <Badge variant="outline">{ticket.category}</Badge>
             </div>
           </div>
           <div className="flex justify-between items-center text-sm text-muted-foreground">
@@ -89,9 +90,11 @@ export const TicketList: FC<TicketListProps> = ({
                 <span>Assigned to: {ticket.assigned_agent.email}</span>
               )}
             </div>
-            <span>
-              Created {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
-            </span>
+            {ticket.created_at && (
+              <span>
+                Created {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
+              </span>
+            )}
           </div>
         </Card>
       ))}

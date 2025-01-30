@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, useSearch } from 'wouter';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,7 +23,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Link } from 'wouter';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -31,9 +30,9 @@ const loginSchema = z.object({
 });
 
 export default function Login() {
-  const [, setLocation] = useLocation();
-  const search = useSearch();
-  const redirectTo = new URLSearchParams(search).get('redirect') || '/portal/dashboard';
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/';
   
   const { login } = useUserStore();
   const { toast } = useToast();
@@ -50,13 +49,17 @@ export default function Login() {
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
       setIsLoading(true);
-      await login(values.email, values.password);
+      await login({
+        type: 'default',
+        email: values.email,
+        password: values.password
+      });
       toast({
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
       });
       // Use the redirect URL from the query parameter
-      setLocation(decodeURIComponent(redirectTo));
+      navigate(decodeURIComponent(redirectTo));
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -123,7 +126,7 @@ export default function Login() {
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-sm text-center text-gray-500">
             Don't have an account?{' '}
-            <Link href="/signup" className="text-primary hover:underline">
+            <Link to="/signup" className="text-primary hover:underline">
               Sign up
             </Link>
           </div>

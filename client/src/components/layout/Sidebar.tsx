@@ -1,24 +1,23 @@
+import { FC } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useUserStore } from '@/stores/userStore';
 import {
   LayoutDashboard,
-  Ticket,
+  Inbox,
   Users,
   Settings,
-  HelpCircle,
+  Menu,
+  X,
   Plus,
-  List,
-  InboxIcon,
   FileText,
+  UserCog,
   BarChart,
   UserPlus,
-  UserCog,
-  LogOut
+  List
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/components/ui/use-toast';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import type { UserRole } from '@/types';
 
 type NavigationItem = {
@@ -45,7 +44,7 @@ const navigation: NavigationItem[] = [
   { 
     name: 'My Tickets', 
     to: '/portal/tickets', 
-    icon: Ticket,
+    icon: Inbox,
     roles: ['customer']
   },
   { 
@@ -65,7 +64,7 @@ const navigation: NavigationItem[] = [
   { 
     name: 'Tickets', 
     to: '/admin/tickets', 
-    icon: Ticket,
+    icon: Inbox,
     roles: ['admin']
   },
   { 
@@ -109,7 +108,7 @@ const navigation: NavigationItem[] = [
   { 
     name: 'Ticket Queue', 
     to: '/agent/queue', 
-    icon: InboxIcon,
+    icon: Inbox,
     roles: ['agent']
   },
   { 
@@ -121,7 +120,7 @@ const navigation: NavigationItem[] = [
   { 
     name: 'All Tickets', 
     to: '/agent/tickets', 
-    icon: Ticket,
+    icon: Inbox,
     roles: ['agent']
   }
 ];
@@ -129,7 +128,6 @@ const navigation: NavigationItem[] = [
 export function Sidebar() {
   const location = useLocation();
   const { currentUser } = useUserStore();
-  const { toast } = useToast();
 
   const filteredNavigation = navigation.filter(item => 
     item.roles.some(role => {

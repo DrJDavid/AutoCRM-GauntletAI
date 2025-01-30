@@ -1,5 +1,5 @@
 import { FC } from 'react';
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,24 +9,33 @@ import {
   BookOpen,
   Clock,
   ArrowRight,
+  LucideIcon
 } from 'lucide-react';
 
-const SupportPage: FC = () => {
-  const [, setLocation] = useLocation();
+interface SupportOption {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  action: () => void;
+  primary?: boolean;
+}
 
-  const supportOptions = [
+const SupportPage: FC = () => {
+  const navigate = useNavigate();
+
+  const supportOptions: SupportOption[] = [
     {
       title: 'Create a Support Ticket',
       description: 'Submit a new support request and get help from our team.',
       icon: MessageSquare,
-      action: () => setLocation('/portal/tickets/new'),
+      action: () => navigate('/portal/tickets/new'),
       primary: true,
     },
     {
       title: 'Knowledge Base',
       description: 'Find answers to common questions in our documentation.',
       icon: BookOpen,
-      action: () => setLocation('/portal/kb'),
+      action: () => navigate('/portal/kb'),
     },
     {
       title: 'Email Support',
@@ -46,7 +55,7 @@ const SupportPage: FC = () => {
     { day: 'Monday - Friday', hours: '9:00 AM - 5:00 PM EST' },
     { day: 'Saturday', hours: '10:00 AM - 2:00 PM EST' },
     { day: 'Sunday', hours: 'Closed' },
-  ];
+  ] as const;
 
   return (
     <div className="space-y-6 p-6">

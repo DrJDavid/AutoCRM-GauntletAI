@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -24,7 +24,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Link } from 'wouter';
 
 const teamLoginSchema = z.object({
   organizationSlug: z.string().min(1, 'Organization ID is required'),
@@ -33,7 +32,7 @@ const teamLoginSchema = z.object({
 });
 
 export default function TeamLogin() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { login } = useUserStore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -72,13 +71,13 @@ export default function TeamLogin() {
       switch (currentUser.role) {
         case 'head_admin':
         case 'admin':
-          setLocation('/admin');
+          navigate('/admin');
           break;
         case 'agent':
-          setLocation('/agent');
+          navigate('/agent');
           break;
         default:
-          setLocation('/unauthorized');
+          navigate('/unauthorized');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -183,20 +182,14 @@ export default function TeamLogin() {
 
           <div className="space-y-2">
             <p className="px-8 text-center text-sm text-muted-foreground">
-              <Link href="/auth/reset-password" className="underline underline-offset-4 hover:text-primary">
+              <Link to="/auth/reset-password" className="underline underline-offset-4 hover:text-primary">
                 Forgot your password?
               </Link>
             </p>
             <p className="px-8 text-center text-sm text-muted-foreground">
               Need to create an account?{' '}
-              <Link href="/auth/team/register" className="underline underline-offset-4 hover:text-primary">
+              <Link to="/auth/team/create-account" className="underline underline-offset-4 hover:text-primary">
                 Register here
-              </Link>
-            </p>
-            <p className="px-8 text-center text-sm text-muted-foreground">
-              Have an invite?{' '}
-              <Link href="/auth/team/accept-invite" className="underline underline-offset-4 hover:text-primary">
-                Accept invitation
               </Link>
             </p>
           </div>

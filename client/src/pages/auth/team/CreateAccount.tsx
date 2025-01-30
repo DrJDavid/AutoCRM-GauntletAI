@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
-import { AuthHeader } from '@/components/auth/AuthHeader';
 import {
   Card,
   CardContent,
@@ -24,7 +23,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Link } from 'wouter';
+import { Link } from 'react-router-dom';
+import { Icons } from '@/components/icons';
 
 const createAccountSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -35,12 +35,14 @@ const createAccountSchema = z.object({
   path: ["confirmPassword"],
 });
 
+type FormData = z.infer<typeof createAccountSchema>;
+
 export default function CreateAccount() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof createAccountSchema>>({
+  const form = useForm<FormData>({
     resolver: zodResolver(createAccountSchema),
     defaultValues: {
       email: '',
@@ -49,7 +51,7 @@ export default function CreateAccount() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof createAccountSchema>) => {
+  const onSubmit = async (values: FormData) => {
     try {
       setIsLoading(true);
 
@@ -74,13 +76,12 @@ export default function CreateAccount() {
       // Create the user profile
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert([
-          {
-            id: authData.user.id,
-            email: values.email,
-            role: 'unaffiliated',
-          }
-        ]);
+        .insert({
+          id: authData.user.id,
+          email: values.email,
+          role: 'agent' as const, // Initial role for team members
+          organization_id: null, // Will be set when joining an organization
+        });
 
       if (profileError) throw profileError;
 
@@ -89,7 +90,7 @@ export default function CreateAccount() {
         description: 'Please check your email to verify your account. You can then join an organization or accept an invite.',
       });
 
-      setLocation('/auth/team/login');
+      navigate('/auth/team/login');
     } catch (error) {
       console.error('Account creation error:', error);
       toast({
@@ -103,16 +104,32 @@ export default function CreateAccount() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <AuthHeader />
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Create Team Account</CardTitle>
-          <CardDescription>
-            Create your account first, then you can join an organization or accept an invite
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="container relative h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
+      <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
+        <div className="absolute inset-0 bg-zinc-900" />
+        <div className="relative z-20 flex items-center text-lg font-medium">
+          <Icons.logo className="mr-2 h-6 w-6" />
+          AutoCRM
+        </div>
+        <div className="relative z-20 mt-auto">
+          <blockquote className="space-y-2">
+            <p className="text-lg">
+              Join your team and start managing customer support with AI-powered automation.
+            </p>
+          </blockquote>
+        </div>
+      </div>
+      <div className="lg:p-8">
+        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+          <div className="flex flex-col space-y-2 text-center">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Create Team Account
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Create your account first, then you can join an organization or accept an invite
+            </p>
+          </div>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -171,29 +188,25 @@ export default function CreateAccount() {
                 className="w-full"
                 disabled={isLoading}
               >
+                {isLoading && (
+                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {isLoading ? 'Creating account...' : 'Create account'}
               </Button>
             </form>
           </Form>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4 text-sm text-center">
-          <div>
+
+          <p className="px-8 text-center text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link href="/auth/team/login" className="text-primary hover:underline">
+            <Link
+              to="/auth/team/login"
+              className="underline underline-offset-4 hover:text-primary"
+            >
               Login
             </Link>
-          </div>
-          <div className="space-x-4">
-            <Link href="/auth/team/join" className="text-primary hover:underline">
-              Join Organization
-            </Link>
-            <span>•</span>
-            <Link href="/auth/team/accept-invite" className="text-primary hover:underline">
-              Accept Invitation
-            </Link>
-          </div>
-        </CardFooter>
-      </Card>
+          </p>
+        </div>
+      </div>
     </div>
   );
 } 

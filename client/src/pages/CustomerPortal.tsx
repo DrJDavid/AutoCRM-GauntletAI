@@ -4,7 +4,7 @@ import { useTicketStore } from '@/stores/ticketStore';
 import { TicketForm } from '@/components/tickets/TicketForm';
 import { TicketList } from '@/features/tickets';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import {
   Tabs,
   TabsContent,
@@ -12,9 +12,17 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import type { DbTicket, TicketStatus, TicketPriority } from '@/types/database';
+import type { Ticket } from '@/features/tickets/types';
+
+interface CreateTicketData {
+  title: string;
+  description: string;
+  priority: DbTicket['priority'];
+}
 
 export default function CustomerPortal() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { currentUser } = useUserStore();
   const { tickets, fetchTickets, createTicket } = useTicketStore();
 
@@ -25,17 +33,27 @@ export default function CustomerPortal() {
   }, [currentUser, fetchTickets]);
 
   const customerTickets = tickets.filter(
-    (ticket) => ticket.customer_id === currentUser?.id
+    (ticket): ticket is Ticket => 
+      ticket.customer_id === currentUser?.id && 
+      ticket.status !== null &&
+      ticket.priority !== null
   );
 
-  const handleCreateTicket = async (data: any) => {
+  const handleCreateTicket = async (data: CreateTicketData) => {
+    if (!currentUser) return;
+    
     try {
       await createTicket({
         ...data,
-        customer_id: currentUser!.id,
-        status: 'open',
+        customer_id: currentUser.id,
+        status: 'open' as const,
+        organization_id: currentUser.organization_id!,
+        metadata: {},
+        assigned_to: null,
+        closed_at: null,
+        last_activity_at: null,
       });
-      setLocation('/customer-portal');
+      navigate('/customer-portal');
     } catch (error) {
       console.error('Failed to create ticket:', error);
     }
@@ -94,7 +112,7 @@ export default function CustomerPortal() {
             <CardContent>
               <TicketList
                 tickets={customerTickets}
-                onTicketSelect={(id) => setLocation(`/tickets/${id}`)}
+                onTicketSelect={(id) => navigate(`/tickets/${id}`)}
               />
             </CardContent>
           </Card>

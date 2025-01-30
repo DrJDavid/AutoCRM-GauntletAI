@@ -1,0 +1,419 @@
+{
+  "timestamp": "2025-01-30T16-37-10.786Z",
+  "data": {
+    "organizations": [
+      {
+        "id": "98a4ffd8-8224-4e5d-958b-ad338368d4b1",
+        "name": "Acme Corporation",
+        "slug": "acme-corp",
+        "created_at": "2025-01-30T08:11:04.643383+00:00",
+        "updated_at": "2025-01-30T08:11:04.643383+00:00",
+        "settings": {
+          "support_hours": "24/7",
+          "default_language": "en"
+        },
+        "metadata": {},
+        "is_active": true
+      }
+    ],
+    "profiles": [
+      {
+        "id": "2d196d44-ae7f-4999-b080-e8a0db639c65",
+        "organization_id": "98a4ffd8-8224-4e5d-958b-ad338368d4b1",
+        "role": "head_admin",
+        "first_name": "John",
+        "last_name": "Doe",
+        "email": "john.doe@acme-corp.com",
+        "phone": null,
+        "avatar_url": null,
+        "title": "Head of Customer Support",
+        "department": null,
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:04.643383+00:00",
+        "updated_at": "2025-01-30T08:11:04.643383+00:00",
+        "last_seen_at": null,
+        "is_active": true
+      },
+      {
+        "id": "91f2c7c2-ee96-4ea8-8faf-423e4e4c3c4b",
+        "organization_id": "98a4ffd8-8224-4e5d-958b-ad338368d4b1",
+        "role": "admin",
+        "first_name": "Jane",
+        "last_name": "Smith",
+        "email": "jane.smith@acme-corp.com",
+        "phone": null,
+        "avatar_url": null,
+        "title": "Support Team Lead",
+        "department": null,
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:04.643383+00:00",
+        "updated_at": "2025-01-30T08:11:04.643383+00:00",
+        "last_seen_at": null,
+        "is_active": true
+      },
+      {
+        "id": "c9c0b4f8-4d6b-4c77-b7e4-bd87c42f9d56",
+        "organization_id": "98a4ffd8-8224-4e5d-958b-ad338368d4b1",
+        "role": "agent",
+        "first_name": "Bob",
+        "last_name": "Wilson",
+        "email": "bob.wilson@acme-corp.com",
+        "phone": null,
+        "avatar_url": null,
+        "title": "Senior Support Agent",
+        "department": null,
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:04.643383+00:00",
+        "updated_at": "2025-01-30T08:11:04.643383+00:00",
+        "last_seen_at": null,
+        "is_active": true
+      },
+      {
+        "id": "d8b6e8f7-3d44-4f3e-9c9a-8d8d8e7f6d5c",
+        "organization_id": "98a4ffd8-8224-4e5d-958b-ad338368d4b1",
+        "role": "agent",
+        "first_name": "Alice",
+        "last_name": "Johnson",
+        "email": "alice.johnson@acme-corp.com",
+        "phone": null,
+        "avatar_url": null,
+        "title": "Support Agent",
+        "department": null,
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:04.643383+00:00",
+        "updated_at": "2025-01-30T08:11:04.643383+00:00",
+        "last_seen_at": null,
+        "is_active": true
+      },
+      {
+        "id": "e7c5b3a2-1d9e-4f8c-b7a6-5c4b3e2d1a9f",
+        "organization_id": "98a4ffd8-8224-4e5d-958b-ad338368d4b1",
+        "role": "customer",
+        "first_name": "Mike",
+        "last_name": "Brown",
+        "email": "mike.brown@customer.com",
+        "phone": null,
+        "avatar_url": null,
+        "title": null,
+        "department": null,
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:04.643383+00:00",
+        "updated_at": "2025-01-30T08:11:04.643383+00:00",
+        "last_seen_at": null,
+        "is_active": true
+      },
+      {
+        "id": "f6d4c2b1-9e8d-7f6e-5d4c-3b2a1e9d8c7b",
+        "organization_id": "98a4ffd8-8224-4e5d-958b-ad338368d4b1",
+        "role": "customer",
+        "first_name": "Sarah",
+        "last_name": "Davis",
+        "email": "sarah.davis@customer.com",
+        "phone": null,
+        "avatar_url": null,
+        "title": null,
+        "department": null,
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:04.643383+00:00",
+        "updated_at": "2025-01-30T08:11:04.643383+00:00",
+        "last_seen_at": null,
+        "is_active": true
+      },
+      {
+        "id": "8db53019-129b-4892-be4e-2762c2cdeb38",
+        "organization_id": "98a4ffd8-8224-4e5d-958b-ad338368d4b1",
+        "role": "head_admin",
+        "first_name": "Test",
+        "last_name": "Admin",
+        "email": "test.admin@acme-corp.com",
+        "phone": null,
+        "avatar_url": null,
+        "title": "Test Head of Customer Support",
+        "department": null,
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:19.217+00:00",
+        "updated_at": "2025-01-30T08:11:19.22+00:00",
+        "last_seen_at": null,
+        "is_active": true
+      },
+      {
+        "id": "e0bc1384-ad97-4142-9dfe-5d40eb6cbd5f",
+        "organization_id": "98a4ffd8-8224-4e5d-958b-ad338368d4b1",
+        "role": "admin",
+        "first_name": "Test",
+        "last_name": "Manager",
+        "email": "test.manager@acme-corp.com",
+        "phone": null,
+        "avatar_url": null,
+        "title": "Test Support Team Lead",
+        "department": null,
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:19.429+00:00",
+        "updated_at": "2025-01-30T08:11:19.429+00:00",
+        "last_seen_at": null,
+        "is_active": true
+      },
+      {
+        "id": "f6403f4c-b1cd-481c-9dcb-d234635dd589",
+        "organization_id": "98a4ffd8-8224-4e5d-958b-ad338368d4b1",
+        "role": "agent",
+        "first_name": "Test",
+        "last_name": "Agent",
+        "email": "test.agent@acme-corp.com",
+        "phone": null,
+        "avatar_url": null,
+        "title": "Test Support Agent",
+        "department": null,
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:19.594+00:00",
+        "updated_at": "2025-01-30T08:11:19.594+00:00",
+        "last_seen_at": null,
+        "is_active": true
+      },
+      {
+        "id": "f196ad92-0734-48f8-a6ea-0d37b14f1184",
+        "organization_id": null,
+        "role": "customer",
+        "first_name": "Test",
+        "last_name": "Customer",
+        "email": "test.customer@customer.com",
+        "phone": null,
+        "avatar_url": null,
+        "title": null,
+        "department": null,
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:19.782+00:00",
+        "updated_at": "2025-01-30T08:11:19.782+00:00",
+        "last_seen_at": null,
+        "is_active": true
+      }
+    ],
+    "tickets": [
+      {
+        "id": "d4e5f6a7-b8c9-4d8e-af3a-2b3c4d5e6f7a",
+        "organization_id": "98a4ffd8-8224-4e5d-958b-ad338368d4b1",
+        "customer_id": "f6d4c2b1-9e8d-7f6e-5d4c-3b2a1e9d8c7b",
+        "assigned_to": "d8b6e8f7-3d44-4f3e-9c9a-8d8d8e7f6d5c",
+        "title": "Feature request: Dark mode",
+        "description": "Would love to see a dark mode option in the application.",
+        "status": "open",
+        "priority": "medium",
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:04.643383+00:00",
+        "updated_at": "2025-01-30T08:11:04.643383+00:00",
+        "closed_at": null,
+        "last_activity_at": "2025-01-30T08:11:04.643383+00:00"
+      },
+      {
+        "id": "c3d4e5f6-a7b8-4c7d-9e2f-1a2b3c4d5e6f",
+        "organization_id": "98a4ffd8-8224-4e5d-958b-ad338368d4b1",
+        "customer_id": "e7c5b3a2-1d9e-4f8c-b7a6-5c4b3e2d1a9f",
+        "assigned_to": "c9c0b4f8-4d6b-4c77-b7e4-bd87c42f9d56",
+        "title": "Cannot access dashboard",
+        "description": "I am unable to access my dashboard since this morning. Getting a 404 error.",
+        "status": "in_progress",
+        "priority": "high",
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:04.643383+00:00",
+        "updated_at": "2025-01-30T08:11:04.643383+00:00",
+        "closed_at": null,
+        "last_activity_at": "2025-01-30T08:11:04.643383+00:00"
+      }
+    ],
+    "ticket_messages": [
+      {
+        "id": "d5e9b472-5b08-4864-bef1-8686f88f6ab9",
+        "ticket_id": "c3d4e5f6-a7b8-4c7d-9e2f-1a2b3c4d5e6f",
+        "sender_id": "e7c5b3a2-1d9e-4f8c-b7a6-5c4b3e2d1a9f",
+        "message": "I have tried clearing my cache and cookies, but still no luck.",
+        "is_internal": false,
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:04.643383+00:00",
+        "updated_at": "2025-01-30T08:11:04.643383+00:00"
+      },
+      {
+        "id": "115d8aa3-1ae8-4a3c-a151-b4f6c9ed26e2",
+        "ticket_id": "c3d4e5f6-a7b8-4c7d-9e2f-1a2b3c4d5e6f",
+        "sender_id": "c9c0b4f8-4d6b-4c77-b7e4-bd87c42f9d56",
+        "message": "I will look into this right away. Can you please provide your browser version?",
+        "is_internal": false,
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:04.643383+00:00",
+        "updated_at": "2025-01-30T08:11:04.643383+00:00"
+      },
+      {
+        "id": "802d9c67-124c-452c-834b-8a5b9aed21fc",
+        "ticket_id": "c3d4e5f6-a7b8-4c7d-9e2f-1a2b3c4d5e6f",
+        "sender_id": "c9c0b4f8-4d6b-4c77-b7e4-bd87c42f9d56",
+        "message": "Checking server logs for any potential issues.",
+        "is_internal": true,
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:04.643383+00:00",
+        "updated_at": "2025-01-30T08:11:04.643383+00:00"
+      }
+    ],
+    "ticket_attachments": [],
+    "ai_agents": [
+      {
+        "id": "a1b2c3d4-e5f6-4a5b-9c8d-7e6f5d4c3b2a",
+        "organization_id": "98a4ffd8-8224-4e5d-958b-ad338368d4b1",
+        "name": "General Support Bot",
+        "description": "Handles general customer inquiries and basic troubleshooting",
+        "is_active": true,
+        "configuration": {
+          "model": "gpt-4",
+          "max_tokens": 500,
+          "temperature": 0.7,
+          "capabilities": [
+            "general_support",
+            "troubleshooting"
+          ]
+        },
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:04.643383+00:00",
+        "updated_at": "2025-01-30T08:11:04.643383+00:00"
+      },
+      {
+        "id": "b2c3d4e5-f6a7-4b6c-ad1e-8f7a6b5c4d3e",
+        "organization_id": "98a4ffd8-8224-4e5d-958b-ad338368d4b1",
+        "name": "Technical Expert Bot",
+        "description": "Specialized in technical product support and advanced issues",
+        "is_active": true,
+        "configuration": {
+          "model": "gpt-4",
+          "max_tokens": 800,
+          "temperature": 0.5,
+          "capabilities": [
+            "technical_support",
+            "code_analysis",
+            "debugging"
+          ]
+        },
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:04.643383+00:00",
+        "updated_at": "2025-01-30T08:11:04.643383+00:00"
+      }
+    ],
+    "ai_agent_assignments": [
+      {
+        "id": "f51a7d06-7c77-45c9-b919-3e4475c83c91",
+        "agent_id": "a1b2c3d4-e5f6-4a5b-9c8d-7e6f5d4c3b2a",
+        "ticket_id": "c3d4e5f6-a7b8-4c7d-9e2f-1a2b3c4d5e6f",
+        "status": "active",
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:04.643383+00:00",
+        "updated_at": "2025-01-30T08:11:04.643383+00:00"
+      }
+    ],
+    "ai_agent_responses": [
+      {
+        "id": "09ede13b-e134-498f-ad52-7285c1c3c582",
+        "assignment_id": "f51a7d06-7c77-45c9-b919-3e4475c83c91",
+        "content": "Based on the description, this appears to be a session-related issue. Recommended troubleshooting steps: 1) Clear browser cache 2) Try incognito mode 3) Check if the issue persists across different browsers.",
+        "confidence_score": 0.85,
+        "metadata": {},
+        "created_at": "2025-01-30T08:11:04.643383+00:00"
+      }
+    ],
+    "invitations": []
+  },
+  "auth": {
+    "users": [
+      {
+        "id": "f196ad92-0734-48f8-a6ea-0d37b14f1184",
+        "aud": "authenticated",
+        "role": "authenticated",
+        "email": "test.customer@customer.com",
+        "email_confirmed_at": "2025-01-30T08:11:19.43697Z",
+        "phone": "",
+        "confirmed_at": "2025-01-30T08:11:19.43697Z",
+        "app_metadata": {
+          "provider": "email",
+          "providers": [
+            "email"
+          ]
+        },
+        "user_metadata": {
+          "email_verified": true
+        },
+        "identities": null,
+        "created_at": "2025-01-30T08:11:19.42761Z",
+        "updated_at": "2025-01-30T08:11:19.438007Z",
+        "is_anonymous": false
+      },
+      {
+        "id": "f6403f4c-b1cd-481c-9dcb-d234635dd589",
+        "aud": "authenticated",
+        "role": "authenticated",
+        "email": "test.agent@acme-corp.com",
+        "email_confirmed_at": "2025-01-30T08:11:19.240881Z",
+        "phone": "",
+        "confirmed_at": "2025-01-30T08:11:19.240881Z",
+        "app_metadata": {
+          "provider": "email",
+          "providers": [
+            "email"
+          ]
+        },
+        "user_metadata": {
+          "email_verified": true
+        },
+        "identities": null,
+        "created_at": "2025-01-30T08:11:19.235741Z",
+        "updated_at": "2025-01-30T08:11:19.242339Z",
+        "is_anonymous": false
+      },
+      {
+        "id": "e0bc1384-ad97-4142-9dfe-5d40eb6cbd5f",
+        "aud": "authenticated",
+        "role": "authenticated",
+        "email": "test.manager@acme-corp.com",
+        "email_confirmed_at": "2025-01-30T08:11:19.067135Z",
+        "phone": "",
+        "confirmed_at": "2025-01-30T08:11:19.067135Z",
+        "app_metadata": {
+          "provider": "email",
+          "providers": [
+            "email"
+          ]
+        },
+        "user_metadata": {
+          "email_verified": true
+        },
+        "identities": null,
+        "created_at": "2025-01-30T08:11:19.060112Z",
+        "updated_at": "2025-01-30T08:11:19.070573Z",
+        "is_anonymous": false
+      },
+      {
+        "id": "8db53019-129b-4892-be4e-2762c2cdeb38",
+        "aud": "authenticated",
+        "role": "authenticated",
+        "email": "test.admin@acme-corp.com",
+        "email_confirmed_at": "2025-01-30T08:11:18.838539Z",
+        "phone": "",
+        "confirmed_at": "2025-01-30T08:11:18.838539Z",
+        "app_metadata": {
+          "provider": "email",
+          "providers": [
+            "email"
+          ]
+        },
+        "user_metadata": {
+          "email_verified": true
+        },
+        "identities": null,
+        "created_at": "2025-01-30T08:11:18.814685Z",
+        "updated_at": "2025-01-30T08:11:18.840126Z",
+        "is_anonymous": false
+      }
+    ],
+    "identities": []
+  },
+  "storage": {
+    "files": {
+      "attachments": [],
+      "avatars": []
+    }
+  }
+}

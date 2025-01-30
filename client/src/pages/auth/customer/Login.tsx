@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, useSearch } from 'wouter';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -24,7 +24,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Link } from 'wouter';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -32,9 +31,9 @@ const loginSchema = z.object({
 });
 
 export default function CustomerLogin() {
-  const [, setLocation] = useLocation();
-  const search = useSearch();
-  const redirectTo = new URLSearchParams(search).get('redirect') || '/portal';
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/portal';
   
   const { login } = useUserStore();
   const { toast } = useToast();
@@ -62,8 +61,8 @@ export default function CustomerLogin() {
         description: 'You have successfully logged in.',
       });
 
-      // Use the redirect URL from the query parameter
-      setLocation(decodeURIComponent(redirectTo));
+      // Use navigate instead of setLocation
+      navigate(decodeURIComponent(redirectTo));
     } catch (error) {
       console.error('Login error:', error);
       toast({
@@ -146,13 +145,13 @@ export default function CustomerLogin() {
 
           <div className="space-y-2">
             <p className="px-8 text-center text-sm text-muted-foreground">
-              <Link href="/auth/customer/reset-password" className="underline underline-offset-4 hover:text-primary">
+              <Link to="/auth/reset-password" className="underline underline-offset-4 hover:text-primary">
                 Forgot your password?
               </Link>
             </p>
             <p className="px-8 text-center text-sm text-muted-foreground">
               Don't have an account?{' '}
-              <Link href="/auth/customer/register" className="underline underline-offset-4 hover:text-primary">
+              <Link to="/auth/customer/register" className="underline underline-offset-4 hover:text-primary">
                 Sign up
               </Link>
             </p>

@@ -8,11 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { CreateTicketForm } from "./components/CreateTicketForm";
 import { useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import type { DbTicket } from "@/types/database";
-import { PortalLayout } from "@/components/layout/PortalLayout";
-import { useLocation } from 'wouter';
+import type { DbTicket, TicketStatus, TicketPriority } from "@/types/database";
+import { useNavigate } from 'react-router-dom';
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
+import { useTicketStore } from '@/stores/ticketStore';
+import { TicketList } from '@/features/tickets';
 
 /**
  * CustomerPortal component serves as the main dashboard for customers
@@ -28,7 +29,7 @@ export default function CustomerPortal() {
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [createTicketOpen, setCreateTicketOpen] = useState(false);
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   // Fetch tickets for the current user
   useEffect(() => {
@@ -91,16 +92,20 @@ export default function CustomerPortal() {
   // Filter tickets based on search query
   const filteredTickets = tickets.filter(ticket =>
     ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.current_description?.toLowerCase().includes(searchQuery.toLowerCase())
+    (ticket.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
   // Calculate ticket statistics
-  const openTickets = tickets.filter(t => ['open', 'in_progress'].includes(t.status));
-  const resolvedTickets = tickets.filter(t => ['resolved', 'closed'].includes(t.status));
+  const openTickets = tickets.filter(t => 
+    t.status && ['open', 'in_progress'].includes(t.status as TicketStatus)
+  );
+  const resolvedTickets = tickets.filter(t => 
+    t.status && ['resolved', 'closed'].includes(t.status as TicketStatus)
+  );
 
   // Handle ticket click
   const handleTicketClick = (ticketId: string) => {
-    setLocation(`/portal/tickets/${ticketId}`);
+    navigate(`/portal/tickets/${ticketId}`);
   };
 
   const statusColors = {
@@ -115,13 +120,6 @@ export default function CustomerPortal() {
     medium: 'bg-yellow-500/10 text-yellow-500',
     high: 'bg-orange-500/10 text-orange-500',
     urgent: 'bg-red-500/10 text-red-500',
-  } as const;
-
-  const categoryColors = {
-    account: 'bg-purple-500/10 text-purple-500',
-    billing: 'bg-emerald-500/10 text-emerald-500',
-    technical_issue: 'bg-cyan-500/10 text-cyan-500',
-    other: 'bg-gray-500/10 text-gray-500',
   } as const;
 
   // Show loading state while authentication is being checked
@@ -242,27 +240,24 @@ export default function CustomerPortal() {
                       <div>
                         <CardTitle className="text-lg">{ticket.title}</CardTitle>
                         <p className="text-sm text-gray-500">
-                          Created on {new Date(ticket.created_at).toLocaleDateString()}
+                          Created on {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : 'Unknown date'}
                         </p>
                       </div>
-                      <div className="flex flex-col gap-2 items-end">
-                        <div className="flex gap-2">
+                      <div className="flex gap-2">
+                        {ticket.priority && (
                           <Badge variant="secondary" className={priorityColors[ticket.priority] || priorityColors.low}>
-                            {ticket.priority?.replace('_', ' ') || 'low'}
+                            {ticket.priority}
                           </Badge>
-                          <Badge variant="secondary" className={statusColors[ticket.status] || statusColors.open}>
-                            {ticket.status?.replace('_', ' ') || 'open'}
+                        )}
+                        {ticket.status && (
+                          <Badge variant="secondary" className={statusColors[ticket.status as keyof typeof statusColors] || statusColors.open}>
+                            {ticket.status}
                           </Badge>
-                        </div>
-                        <Badge variant="secondary" className={categoryColors[ticket.category] || categoryColors.other}>
-                          {ticket.category?.replace('_', ' ') || 'other'}
-                        </Badge>
+                        )}
                       </div>
                     </div>
-                    {ticket.current_description && (
-                      <p className="text-gray-600 mt-2 line-clamp-2">
-                        {ticket.current_description}
-                      </p>
+                    {ticket.description && (
+                      <p className="text-sm text-gray-600 mt-2">{ticket.description}</p>
                     )}
                   </CardHeader>
                 </Card>

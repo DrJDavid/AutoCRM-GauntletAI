@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'wouter';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -34,13 +34,14 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const [location, setLocation] = useLocation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { currentUser, logout } = useUserStore();
 
   const handleLogout = async () => {
     try {
       await logout();
-      setLocation('/');
+      navigate('/');
     } catch (error) {
       console.error('Logout failed:', error);
     }
@@ -58,16 +59,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {sidebarItems.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.href} href={item.href}>
-                <a className={cn(
+              <Link
+                key={item.href}
+                to={item.href}
+                className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
-                  location === item.href 
+                  location.pathname === item.href 
                     ? "bg-gray-800 text-white" 
                     : "text-gray-400 hover:text-white hover:bg-gray-800"
-                )}>
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </a>
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
               </Link>
             );
           })}

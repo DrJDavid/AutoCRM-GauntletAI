@@ -177,4 +177,12 @@ returns table (
   from tickets
   where assigned_to = agent_id_param
     and created_at between start_date and end_date;
-$$ language sql security definer; 
+$$ language sql security definer;
+
+-- Helper function to safely truncate tables
+create or replace function truncate_table(table_name text)
+returns void as $$
+begin
+  execute format('truncate table %I cascade', table_name);
+end;
+$$ language plpgsql security definer; 

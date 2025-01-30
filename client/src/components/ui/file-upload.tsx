@@ -21,9 +21,13 @@ export interface FileUploadProps {
    */
   accept?: Record<string, string[]>;
   /**
-   * Callback when files are added or removed
+   * Callback when files are uploaded
    */
-  onChange?: (files: File[]) => void;
+  onUpload: (files: File[]) => Promise<void>;
+  /**
+   * Whether files are currently being uploaded
+   */
+  isUploading?: boolean;
   /**
    * Additional CSS classes
    */
@@ -41,28 +45,28 @@ export function FileUpload({
     'image/*': ['.png', '.jpg', '.jpeg', '.gif'],
     'application/pdf': ['.pdf'],
   },
-  onChange,
+  onUpload,
+  isUploading = false,
   className,
   disabled = false,
 }: FileUploadProps) {
   const [files, setFiles] = useState<File[]>([]);
 
   const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
+    async (acceptedFiles: File[]) => {
       const newFiles = [...files, ...acceptedFiles].slice(0, maxFiles);
       setFiles(newFiles);
-      onChange?.(newFiles);
+      await onUpload(acceptedFiles);
     },
-    [files, maxFiles, onChange]
+    [files, maxFiles, onUpload]
   );
 
   const removeFile = useCallback(
     (index: number) => {
       const newFiles = files.filter((_, i) => i !== index);
       setFiles(newFiles);
-      onChange?.(newFiles);
     },
-    [files, onChange]
+    [files]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -70,7 +74,7 @@ export function FileUpload({
     maxFiles: maxFiles - files.length,
     maxSize,
     accept,
-    disabled,
+    disabled: disabled || isUploading,
   });
 
   return (
@@ -78,22 +82,25 @@ export function FileUpload({
       <div
         {...getRootProps()}
         className={cn(
-          'border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors',
+          'border-2 border-dashed rounded-lg p-6 text-center transition-colors',
           isDragActive
             ? 'border-primary bg-primary/5'
             : 'border-muted-foreground/25 hover:border-primary/50',
-          disabled && 'opacity-50 cursor-not-allowed'
+          (disabled || isUploading) && 'opacity-50 cursor-not-allowed'
         )}
       >
         <input {...getInputProps()} />
         <div className="flex flex-col items-center gap-2">
-          <Upload className="h-8 w-8 text-muted-foreground" />
+          <Upload className={cn(
+            "h-8 w-8",
+            isUploading ? "animate-bounce text-primary" : "text-muted-foreground"
+          )} />
           {isDragActive ? (
             <p>Drop the files here...</p>
           ) : (
             <>
               <p className="text-sm">
-                Drag & drop files here, or click to select files
+                {isUploading ? "Uploading..." : "Drag & drop files here, or click to select files"}
               </p>
               <p className="text-xs text-muted-foreground">
                 {Object.entries(accept)
@@ -134,6 +141,7 @@ export function FileUpload({
                 size="icon"
                 className="h-6 w-6"
                 onClick={() => removeFile(index)}
+                disabled={isUploading}
               >
                 <X className="h-4 w-4" />
                 <span className="sr-only">Remove file</span>

@@ -8,11 +8,19 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
 
 export default function Landing() {
   const navigate = useNavigate();
   const { currentUser } = useUserStore();
 
+  // Redirect logged-in users to their respective dashboards
   const handleGetStarted = () => {
     if (currentUser) {
       switch (currentUser.role) {
@@ -27,10 +35,10 @@ export default function Landing() {
           navigate('/portal');
           break;
         default:
-          navigate('/login');
+          navigate('/org/new');
       }
     } else {
-      navigate('/login');
+      navigate('/org/new');
     }
   };
 
@@ -43,12 +51,42 @@ export default function Landing() {
         <div className="ml-auto flex items-center gap-4">
           {!currentUser && (
             <>
-              <Button variant="ghost" onClick={() => navigate('/login')}>
-                Log in
-              </Button>
-              <Button onClick={() => navigate('/register')}>
-                Sign up
-              </Button>
+              {/* Login Options */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost">
+                    Log in <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate('/auth/team/login')}>
+                    Team & Agent Login
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/auth/customer/login')}>
+                    Customer Login
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Register/Join Options */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button>
+                    Get Started <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate('/org/new')}>
+                    Create Organization
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/auth/team/create-account')}>
+                    Join as Team Member
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/auth/customer/register')}>
+                    Register as Customer
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
         </div>
@@ -68,7 +106,7 @@ export default function Landing() {
           </div>
           <div className="flex gap-4">
             <Button size="lg" onClick={handleGetStarted}>
-              Get Started
+              Create Your Organization
             </Button>
             <Button size="lg" variant="outline" onClick={() => navigate('/kb')}>
               Learn More
@@ -120,6 +158,56 @@ export default function Landing() {
                 </p>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Quick Access Section */}
+          <div className="mt-12 border-t pt-8">
+            <h2 className="mb-6 text-2xl font-bold">Quick Access</h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Have an Invite?</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => navigate('/auth/team/create-account')}
+                  >
+                    Accept Team/Agent Invite
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => navigate('/auth/customer/register')}
+                  >
+                    Accept Customer Invite
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Portal Access</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => navigate('/auth/team/login')}
+                  >
+                    Team & Agent Portal
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => navigate('/auth/customer/login')}
+                  >
+                    Customer Portal
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </section>
       </main>

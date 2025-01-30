@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,7 +32,7 @@ const setupSchema = z.object({
 });
 
 export default function OrganizationSetup() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { currentUser } = useUserStore();
   const [isLoading, setIsLoading] = useState(false);
@@ -95,7 +95,7 @@ export default function OrganizationSetup() {
           : 'Your organization is ready to go.',
       });
 
-      setLocation('/admin/dashboard');
+      navigate('/admin/dashboard');
     } catch (error) {
       toast({
         variant: 'destructive',

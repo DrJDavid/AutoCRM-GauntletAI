@@ -11,10 +11,11 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Debug logging
 console.log('Raw env values:', {
-  VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
-  VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY
+  VITE_SUPABASE_URL: supabaseUrl,
+  VITE_SUPABASE_ANON_KEY: supabaseAnonKey?.slice(0, 10) + '...',
 });
 
+// Validate environment variables
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(
     'Missing Supabase environment variables. Please check your .env file and ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.'
@@ -23,9 +24,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 // Public client - only uses anon key
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Remove admin client from frontend code
-// Admin operations should be handled by the backend API
 
 // Helper function to verify organization access
 export const verifyOrganizationAccess = async (organizationSlug: string) => {
@@ -58,10 +56,5 @@ export const getUserProfile = async (userId: string) => {
     .single();
 
   if (error) throw error;
-
-  // Transform the response to match the expected format
-  return {
-    ...profile,
-    organizations: profile.organization // Rename organization to organizations to match expected format
-  };
+  return profile;
 };

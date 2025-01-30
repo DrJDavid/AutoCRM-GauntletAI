@@ -1,55 +1,30 @@
 import { useEffect } from 'react';
-import { Link } from 'wouter';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUserStore } from '@/stores/userStore';
 import { useTicketStore } from '@/stores/ticketStore';
 import { 
-  Users, 
   TicketCheck, 
-  Clock, 
   AlertCircle,
-  ArrowUpRight,
-  ArrowDownRight,
   Loader2,
   UserPlus,
   BarChart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { TicketList } from '@/features/tickets';
 
 export default function AdminDashboard() {
-  const { currentUser, isLoading: userLoading } = useUserStore();
-  const { tickets, isLoading: ticketsLoading, error, fetchTickets } = useTicketStore();
+  const navigate = useNavigate();
+  const { currentUser } = useUserStore();
+  const { tickets, fetchTickets } = useTicketStore();
 
   useEffect(() => {
-    if (currentUser?.organization) {
+    if (currentUser) {
       fetchTickets();
     }
-  }, [fetchTickets, currentUser?.organization]);
+  }, [currentUser, fetchTickets]);
 
-  if (userLoading || ticketsLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
-          <h3 className="font-semibold">Error Loading Dashboard</h3>
-          <p className="text-sm text-muted-foreground">{error.message}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!currentUser) {
+  if (currentUser === null) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
@@ -136,19 +111,19 @@ export default function AdminDashboard() {
       <div className="mt-6">
         <h3 className="text-lg font-medium mb-4">Quick Actions</h3>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Link href="/org/customers/invite">
+          <Link to="/org/customers/invite">
             <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
               <UserPlus className="h-6 w-6" />
               <span>Invite Customers</span>
             </Button>
           </Link>
-          <Link href="/admin/tickets/all">
+          <Link to="/admin/tickets/all">
             <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
               <TicketCheck className="h-6 w-6" />
               <span>View All Tickets</span>
             </Button>
           </Link>
-          <Link href="/admin/tickets/analytics">
+          <Link to="/admin/tickets/analytics">
             <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
               <BarChart className="h-6 w-6" />
               <span>View Analytics</span>

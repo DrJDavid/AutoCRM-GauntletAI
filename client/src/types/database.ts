@@ -81,4 +81,27 @@ export type GetUserRole = Database['public']['Functions']['get_user_role']['Retu
 export type GetUserOrganizationId = Database['public']['Functions']['get_user_organization_id']['Returns'];
 export type GetTicketStats = Database['public']['Functions']['get_ticket_stats']['Returns'];
 export type GetAgentPerformance = Database['public']['Functions']['get_agent_performance']['Returns'];
-export type ValidateInviteByEmail = Database['public']['Functions']['validate_invite_by_email']['Returns']; 
+export type ValidateInviteByEmail = Database['public']['Functions']['validate_invite_by_email']['Returns'];
+
+// Extended types with relationships
+export type Ticket = DbTicket & {
+  customer?: DbProfile;
+  assigned_agent?: DbProfile;
+};
+
+export type Profile = DbProfile & {
+  organization?: DbOrganization;
+};
+
+export type Organization = DbOrganization & {
+  members?: DbProfile[];
+};
+
+// Type guards
+export const isTicketStatus = (status: any): status is TicketStatus => {
+  return ['open', 'in_progress', 'pending', 'resolved', 'closed'].includes(status);
+};
+
+export const isTicketPriority = (priority: any): priority is TicketPriority => {
+  return ['low', 'medium', 'high', 'urgent'].includes(priority);
+}; 

@@ -1,89 +1,138 @@
- import { useEffect, useState } from 'react';
-import { useLocation } from 'wouter';
-import { supabase } from '@/lib/supabase';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '@/stores/userStore';
-import { useToast } from '@/components/ui/use-toast';
+import { useTicketStore } from '@/stores/ticketStore';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import {
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/components/ui/use-toast';
+import { 
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { UserPlus } from 'lucide-react';
+  TableHead,
+  TableBody,
+  TableCell
+} from '@/components/ui/table';
+import { supabase } from '@/lib/supabaseClient';
+import type { DbTicket, TicketStatus, TicketPriority } from '@/types/database';
 
-interface Ticket {
+type Profile = {
   id: string;
-  title: string;
-  description: string;
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  created_at: string;
-  customer_id: string;
-  assigned_agent_id: string | null;
-  customer: {
-    email: string;
-  };
-  organization_id: string;
+  email: string;
+  full_name: string | null;
+};
+
+interface TicketWithRelations extends Omit<DbTicket, 'assigned_to'> {
+  customer?: Profile;
+  assigned_to?: Profile | null;
 }
 
-const priorityColors = {
+const priorityColors: Record<TicketPriority, string> = {
   urgent: 'bg-red-100 text-red-800',
   high: 'bg-orange-100 text-orange-800',
   medium: 'bg-yellow-100 text-yellow-800',
   low: 'bg-green-100 text-green-800',
 };
 
-const statusColors = {
+const statusColors: Record<TicketStatus, string> = {
+  pending: 'bg-yellow-100 text-yellow-800',
   open: 'bg-blue-100 text-blue-800',
   in_progress: 'bg-purple-100 text-purple-800',
   resolved: 'bg-gray-100 text-gray-800',
+  closed: 'bg-gray-100 text-gray-800'
 };
 
 export default function AgentDashboard() {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [tickets, setTickets] = useState<TicketWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { currentUser } = useUserStore();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
+    // Redirect if no user or not an agent
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+
     async function fetchTickets() {
-      if (!currentUser?.organization_id) return;
+      if (!currentUser?.organization_id) {
+        setError('No organization found');
+        setLoading(false);
+        return;
+      }
 
       try {
+        setLoading(true);
+        setError(null);
+        
         const { data, error } = await supabase
           .from('tickets')
           .select(`
-            *,
-            customer:customer_id(
+            id,
+            title,
+            description,
+            status,
+            priority,
+            created_at,
+            updated_at,
+            closed_at,
+            customer_id,
+            organization_id,
+            metadata,
+            last_activity_at,
+            customer:profiles!tickets_customer_id_fkey(
               id,
-              email,
-              full_name
+              email
             ),
-            assigned_to:assigned_agent_id(
+            assigned_to:profiles!tickets_assigned_to_fkey(
               id,
-              email,
-              full_name
+              email
             )
           `)
           .eq('organization_id', currentUser.organization_id)
-          .order('created_at', { ascending: false }); // Newest first
+          .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setTickets(data || []);
-      } catch (error) {
-        console.error('Error fetching tickets:', error);
+        
+        // Transform the data to match our types
+        const transformedData: TicketWithRelations[] = (data || []).map(ticket => ({
+          id: ticket.id,
+          title: ticket.title,
+          description: ticket.description,
+          status: ticket.status,
+          priority: ticket.priority,
+          created_at: ticket.created_at,
+          updated_at: ticket.updated_at,
+          closed_at: ticket.closed_at,
+          customer_id: ticket.customer_id,
+          organization_id: ticket.organization_id,
+          metadata: ticket.metadata,
+          last_activity_at: ticket.last_activity_at,
+          customer: ticket.customer ? {
+            id: ticket.customer.id,
+            email: ticket.customer.email,
+            full_name: null
+          } : undefined,
+          assigned_to: ticket.assigned_to ? {
+            id: ticket.assigned_to.id,
+            email: ticket.assigned_to.email,
+            full_name: null
+          } : null
+        }));
+
+        setTickets(transformedData);
+      } catch (err) {
+        console.error('Error fetching tickets:', err);
+        setError('Failed to fetch tickets');
       } finally {
         setLoading(false);
       }
@@ -111,16 +160,16 @@ export default function AgentDashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentUser?.organization_id]);
+  }, [currentUser, navigate]);
 
   const handleAssignToMe = async (e: React.MouseEvent, ticketId: string) => {
-    e.stopPropagation(); // Prevent row click
+    e.stopPropagation();
     if (!currentUser?.id) return;
 
     try {
       const { error } = await supabase
         .from('tickets')
-        .update({ assigned_agent_id: currentUser.id })
+        .update({ assigned_to: currentUser.id })
         .eq('id', ticketId);
 
       if (error) throw error;
@@ -140,11 +189,34 @@ export default function AgentDashboard() {
   };
 
   const handleRowClick = (ticketId: string) => {
-    setLocation(`/agent/tickets/${ticketId}`);
+    navigate(`/agent/tickets/${ticketId}`);
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading tickets...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-600">{error}</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="mt-4"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -218,25 +290,22 @@ export default function AgentDashboard() {
                   <TableCell className="font-medium">{ticket.title}</TableCell>
                   <TableCell>{ticket.customer?.email}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary" className={statusColors[ticket.status]}>
-                      {ticket.status.replace('_', ' ')}
-                    </Badge>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[ticket.status || 'open']}`}>
+                      {(ticket.status || 'open').replace('_', ' ')}
+                    </span>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary" className={priorityColors[ticket.priority]}>
-                      {ticket.priority}
-                    </Badge>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColors[ticket.priority || 'low']}`}>
+                      {ticket.priority || 'low'}
+                    </span>
                   </TableCell>
-                  <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell>{ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : 'N/A'}</TableCell>
                   <TableCell>
                     {ticket.assigned_to?.email || (
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAssignToMe(e, ticket.id);
-                        }}
+                        onClick={(e) => handleAssignToMe(e, ticket.id)}
                       >
                         Assign to me
                       </Button>

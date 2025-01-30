@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,9 +17,17 @@ import { Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { TicketWithRelations } from "@/types/tickets";
+import type { Database } from "@/types/supabase";
+
+type Ticket = Database['public']['Tables']['tickets']['Row'] & {
+  customer: { email: string } | null;
+  assigned_agent: { email: string } | null;
+};
 
 export default function AdminTickets() {
-  const [location, setLocation] = useLocation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { currentUser } = useUserStore();
   const { tickets, isLoading, error, fetchTickets } = useTicketStore();
 
@@ -36,7 +44,7 @@ export default function AdminTickets() {
     try {
       const { error } = await supabase
         .from('tickets')
-        .update({ assigned_agent_id: currentUser.id })
+        .update({ assigned_to: currentUser.id })
         .eq('id', ticketId);
 
       if (error) throw error;
@@ -86,7 +94,7 @@ export default function AdminTickets() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">All Tickets</h1>
-        <Button onClick={() => setLocation("/admin/tickets/new")}>Create Ticket</Button>
+        <Button onClick={() => navigate("/admin/tickets/new")}>Create Ticket</Button>
       </div>
 
       <div className="rounded-md border">
@@ -104,11 +112,11 @@ export default function AdminTickets() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tickets.map((ticket) => (
+            {(tickets as Ticket[]).map((ticket) => (
               <TableRow
                 key={ticket.id}
                 className="cursor-pointer"
-                onClick={() => setLocation(`/admin/tickets/${ticket.id}`)}
+                onClick={() => navigate(`/admin/tickets/${ticket.id}`)}
               >
                 <TableCell className="font-medium">{ticket.id}</TableCell>
                 <TableCell>{ticket.title}</TableCell>
@@ -138,7 +146,9 @@ export default function AdminTickets() {
                     {ticket.priority}
                   </Badge>
                 </TableCell>
-                <TableCell>{ticket.customer.email}</TableCell>
+                <TableCell>
+                  {ticket.customer?.email || 'No customer email'}
+                </TableCell>
                 <TableCell>
                   {ticket.assigned_agent?.email || (
                     <Button
@@ -150,14 +160,16 @@ export default function AdminTickets() {
                     </Button>
                   )}
                 </TableCell>
-                <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
+                <TableCell>
+                  {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : 'N/A'}
+                </TableCell>
                 <TableCell>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setLocation(`/admin/tickets/${ticket.id}`);
+                      navigate(`/admin/tickets/${ticket.id}`);
                     }}
                   >
                     View

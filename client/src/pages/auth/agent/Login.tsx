@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, useSearch } from 'wouter';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -30,9 +30,9 @@ const loginSchema = z.object({
 });
 
 export default function AgentLogin() {
-  const [, setLocation] = useLocation();
-  const search = useSearch();
-  const redirectTo = new URLSearchParams(search).get('redirect');
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/agent';
   
   const { login, currentUser } = useUserStore();
   const { toast } = useToast();
@@ -50,24 +50,8 @@ export default function AgentLogin() {
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
       setIsLoading(true);
-      await login({
-        type: 'team',
-        email: values.email,
-        password: values.password,
-        organizationSlug: values.organizationSlug,
-      });
-
-      toast({
-        title: 'Welcome back!',
-        description: 'You have successfully logged in.',
-      });
-
-      // If there's a redirect URL, use it; otherwise redirect based on role
-      if (redirectTo) {
-        setLocation(decodeURIComponent(redirectTo));
-      } else {
-        setLocation(currentUser?.role === 'admin' ? '/admin/dashboard' : '/agent/dashboard');
-      }
+      await login(values);
+      navigate(decodeURIComponent(redirectTo));
     } catch (error) {
       toast({
         variant: 'destructive',

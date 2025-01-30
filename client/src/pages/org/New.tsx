@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { useNavigate, Link } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/components/ui/use-toast';
 import { AuthHeader } from '@/components/auth/AuthHeader';
-import { Link } from 'wouter';
 import { useOrganizationStore } from '@/stores/organizationStore';
 
 const organizationSchema = z.object({
@@ -30,7 +29,7 @@ const organizationSchema = z.object({
 });
 
 export default function OrganizationNew() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const { createOrganization } = useOrganizationStore();
@@ -62,8 +61,7 @@ export default function OrganizationNew() {
         description: 'Your organization has been created successfully.',
       });
 
-      // Redirect to admin dashboard since user is already authenticated
-      setLocation('/admin/dashboard');
+      navigate('/org/setup');
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -203,8 +201,8 @@ export default function OrganizationNew() {
 
           <p className="px-8 text-center text-sm text-muted-foreground">
             Already have an organization?{' '}
-            <Link href="/org/login">
-              <span className="underline underline-offset-4 hover:text-primary">Sign in</span>
+            <Link to="/auth/team/login" className="text-primary hover:underline">
+              Sign in
             </Link>
           </p>
         </div>

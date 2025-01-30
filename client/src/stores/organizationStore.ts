@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabase';
 import type { UserRole } from '@/db/types/database';
 
 interface BusinessHours {
@@ -40,37 +40,9 @@ interface Organization {
   slug: string;
   created_at: string;
   updated_at: string;
-  is_deleted: boolean;
-  business_hours: BusinessHours;
-  phone_numbers: PhoneNumber[];
-  contact_emails: ContactEmail[];
-  physical_addresses: PhysicalAddress[];
-  support_channels: {
-    email: { enabled: boolean };
-    phone: { enabled: boolean };
-    chat: { enabled: boolean };
-    ticket: { enabled: boolean };
-  };
-  chat_settings: {
-    enabled: boolean;
-    operating_hours: {
-      inherit_business_hours: boolean;
-      custom_hours?: BusinessHours;
-    };
-    queue_settings: {
-      max_queue_size: number;
-      max_wait_time: number;
-    };
-    auto_responses: {
-      welcome: string;
-      offline: string;
-      queue: string;
-    };
-    routing: {
-      method: 'round_robin' | 'least_busy' | 'manual';
-      fallback_agent_id: string | null;
-    };
-  };
+  settings: Record<string, any>;
+  metadata: Record<string, any>;
+  is_active: boolean;
 }
 
 interface CreateOrganizationData {
@@ -103,7 +75,7 @@ export const useOrganizationStore = create<OrganizationStore>((set, get) => ({
         .from('organizations')
         .select('*')
         .eq('id', id)
-        .eq('is_deleted', false)
+        .eq('is_active', true)
         .single();
 
       if (error) throw error;
@@ -127,7 +99,7 @@ export const useOrganizationStore = create<OrganizationStore>((set, get) => ({
         .from('organizations')
         .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', organization.id)
-        .eq('is_deleted', false);
+        .eq('is_active', true);
 
       if (error) throw error;
 
@@ -148,79 +120,30 @@ export const useOrganizationStore = create<OrganizationStore>((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      // Check if organization with slug already exists
-      const { data: existingOrgs, error: slugError } = await supabase
-        .from('organizations')
-        .select('id')
-        .eq('slug', data.slug)
-        .eq('is_deleted', false);
-
-      if (slugError) throw slugError;
-      if (existingOrgs && existingOrgs.length > 0) {
-        throw new Error(`Organization with slug "${data.slug}" already exists. Please choose a different slug.`);
-      }
-
-      // Sign up the user first using Supabase Auth
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: data.adminEmail,
-        password: data.adminPassword,
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-organization`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify(data)
       });
 
-      if (signUpError) throw signUpError;
-      if (!authData.user) throw new Error('Failed to create user account');
+      const result = await response.json();
 
-      // Create the organization
-      const { data: orgData, error: orgError } = await supabase
-        .from('organizations')
-        .insert([
-          {
-            name: data.name,
-            slug: data.slug,
-            is_deleted: false
-          }
-        ])
-        .select()
-        .single();
-
-      if (orgError) {
-        console.error('Organization creation error:', orgError);
-        throw new Error(`Failed to create organization: ${orgError.message}`);
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create organization');
       }
 
-      // Create the admin profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: authData.user.id,
-            email: data.adminEmail,
-            role: 'head_admin',
-            organization_id: orgData.id,
-            is_head_admin: true,
-            is_deleted: false
-          }
-        ])
-        .select()
-        .single();
+      set({ 
+        organization: result.data.organization,
+        loading: false 
+      });
 
-      if (profileError) {
-        // If profile creation fails, cleanup
-        await supabase.from('organizations').delete().eq('id', orgData.id);
-        throw new Error(`Failed to create admin profile: ${profileError.message}`);
-      }
-
-      // Set the user store with the new profile
-      const userStore = useUserStore.getState();
-      userStore.currentUser = {
-        ...profileData,
-        organization: orgData
+      return {
+        organizationId: result.data.organizationId,
+        adminId: result.data.adminId
       };
-      userStore.isAuthenticated = true;
-      userStore.isLoading = false;
-      userStore.error = null;
-
-      set({ organization: orgData, loading: false });
-      return { organizationId: orgData.id, adminId: authData.user.id };
     } catch (error) {
       console.error('Error creating organization:', error);
       set({

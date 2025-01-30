@@ -9,12 +9,21 @@ values
   ('f6d4c2b1-9e8d-7f6e-5d4c-3b2a1e9d8c7b', 'sarah.davis@customer.com');
 
 -- Seed organization
-insert into organizations (id, name, slug, settings)
+insert into organizations (id, name, slug, settings, metadata, is_active, created_at, updated_at)
 values (
   '98a4ffd8-8224-4e5d-958b-ad338368d4b1',
   'Acme Corporation',
   'acme-corp',
-  '{"support_hours": "24/7", "default_language": "en"}'::jsonb
+  jsonb_build_object(
+    'support_hours', '24/7',
+    'default_language', 'en',
+    'support_email', 'support@acme-corp.com',
+    'billing_email', 'billing@acme-corp.com'
+  ),
+  '{}'::jsonb,
+  true,
+  NOW(),
+  NOW()
 );
 
 -- Seed user profiles

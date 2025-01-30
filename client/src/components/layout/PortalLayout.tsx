@@ -1,4 +1,4 @@
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Home, ArrowLeft, LogOut } from 'lucide-react';
 import { useUserStore } from '@/stores/userStore';
@@ -9,14 +9,14 @@ interface PortalLayoutProps {
 }
 
 export function PortalLayout({ children }: PortalLayoutProps) {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { logout } = useUserStore();
   const { toast } = useToast();
 
   const handleLogout = async () => {
     try {
       await logout();
-      setLocation('/');
+      navigate('/');
     } catch (error) {
       console.error('Logout failed:', error);
       toast({
@@ -38,7 +38,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setLocation('/')}
+                onClick={() => navigate('/')}
                 className="flex items-center gap-2"
               >
                 <Home className="h-4 w-4" />
@@ -47,7 +47,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setLocation('/portal')}
+                onClick={() => navigate('/portal')}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -60,14 +60,14 @@ export function PortalLayout({ children }: PortalLayoutProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setLocation('/portal/kb')}
+                onClick={() => navigate('/portal/kb')}
               >
                 Knowledge Base
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setLocation('/portal/support')}
+                onClick={() => navigate('/portal/support')}
               >
                 Contact Support
               </Button>

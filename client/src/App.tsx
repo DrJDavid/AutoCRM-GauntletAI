@@ -1,5 +1,5 @@
 import { useEffect, FC } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { useUserStore } from '@/stores/userStore';
@@ -8,12 +8,9 @@ import { Toaster } from '@/components/ui';
 
 // Layouts
 import {
-  PublicLayout,
   AdminLayout,
   AgentLayout,
-  PortalLayout,
-  type LayoutRole
-} from '@/components/layout';
+  PortalLayout} from '@/components/layout';
 
 // Auth Pages
 import Login from '@/pages/auth/Login';
@@ -22,19 +19,11 @@ import ResetPassword from '@/pages/auth/ResetPassword';
 
 // Team Auth
 import TeamLogin from '@/pages/auth/team/Login';
-import TeamRegister from '@/pages/auth/team/Register';
-import TeamAcceptInvite from '@/pages/auth/team/AcceptInvite';
-import TeamJoinRequest from '@/pages/auth/team/TeamJoinRequest';
 import TeamCreateAccount from '@/pages/auth/team/CreateAccount';
 
 // Customer Auth
 import CustomerLogin from '@/pages/auth/customer/Login';
 import CustomerRegister from '@/pages/auth/customer/Register';
-import CustomerAcceptInvite from '@/pages/auth/customer/AcceptInvite';
-
-// Agent Auth
-import AgentLogin from '@/pages/auth/agent/Login';
-import AgentRegister from '@/pages/auth/agent/Register';
 
 // Organization Pages
 import OrganizationNew from '@/pages/org/New';
@@ -74,125 +63,128 @@ import NotFound from '@/pages/not-found';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 const App: FC = () => {
+  const location = useLocation();
   const checkAuth = useUserStore((state) => state.checkAuth);
   const { setupTicketSubscription, cleanup, fetchTickets } = useTicketStore();
   const { currentUser } = useUserStore();
 
-  // Handle auth check and ticket subscription
+  // Handle auth check
   useEffect(() => {
     checkAuth();
-    
-    // Only set up subscription and fetch tickets if user is logged in
+  }, [checkAuth]);
+
+  // Handle ticket subscription and data fetching
+  useEffect(() => {
     if (currentUser?.organization_id) {
       const cleanupSubscription = setupTicketSubscription();
-      fetchTickets(); // Initial fetch
+      fetchTickets();
 
       return () => {
         cleanup();
         cleanupSubscription();
       };
     }
-  }, [checkAuth, currentUser?.organization_id]);
+  }, [currentUser?.organization_id, location.pathname]);
+
+  // Reset scroll position on navigation
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen">
         <Toaster />
-        <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/auth/reset-password" element={<ResetPassword />} />
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/auth/reset-password" element={<ResetPassword />} />
 
-            {/* Organization Routes */}
-            <Route path="/org">
-              <Route path="new" element={<OrganizationNew />} />
-              <Route path="setup" element={<OrganizationSetup />} />
-              <Route path="customers/invite" element={<CustomerInvite />} />
-              <Route path="agents/invite" element={<AgentInvite />} />
-            </Route>
+          {/* Organization Routes */}
+          <Route path="/org">
+            <Route path="new" element={<OrganizationNew />} />
+            <Route path="setup" element={<OrganizationSetup />} />
+            <Route path="customers/invite" element={<CustomerInvite />} />
+            <Route path="agents/invite" element={<AgentInvite />} />
+          </Route>
 
-            {/* Team Auth Routes */}
-            <Route path="/auth/team">
-              <Route path="login" element={<TeamLogin />} />
-              <Route path="accept-invite" element={<TeamAcceptInvite />} />
-              <Route path="join-request" element={<TeamJoinRequest />} />
-              <Route path="create-account" element={<TeamCreateAccount />} />
-            </Route>
+          {/* Team Auth Routes */}
+          <Route path="/auth/team">
+            <Route path="login" element={<TeamLogin />} />
+            <Route path="create-account" element={<TeamCreateAccount />} />
+          </Route>
 
-            {/* Customer Auth Routes */}
-            <Route path="/auth/customer">
-              <Route path="login" element={<CustomerLogin />} />
-              <Route path="register" element={<CustomerRegister />} />
-              <Route path="accept-invite" element={<CustomerAcceptInvite />} />
-            </Route>
+          {/* Customer Auth Routes */}
+          <Route path="/auth/customer">
+            <Route path="login" element={<CustomerLogin />} />
+            <Route path="register" element={<CustomerRegister />} />
+          </Route>
 
-            {/* Admin Routes */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'head_admin']}>
-                  <AdminLayout>
-                    <Outlet />
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<DashboardPage />} />
-              <Route path="tickets" element={<TicketsPage />} />
-              <Route path="tickets/:id" element={<AdminTicketDetailsPage />} />
-              <Route path="agents" element={<ManageAgentsPage />} />
-              <Route path="users" element={<UsersPage />} />
-              <Route path="analytics" element={<AnalyticsPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="invite-customers" element={<InviteCustomersPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-
-            {/* Agent Routes */}
-            <Route
-              path="/agent"
-              element={
-                <ProtectedRoute allowedRoles={['agent']}>
-                  <AgentLayout>
-                    <Outlet />
-                  </AgentLayout>
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<AgentDashboardPage />} />
-              <Route path="tickets" element={<AgentTicketListPage />} />
-              <Route path="tickets/:id" element={<AgentTicketDetailsPage />} />
-              <Route path="queue" element={<TicketQueuePage />} />
-              <Route path="assigned" element={<AssignedTicketsPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-
-            {/* Customer Portal Routes */}
-            <Route
-              path="/portal"
-              element={
-                <ProtectedRoute allowedRoles={['customer']}>
-                  <PortalLayout>
-                    <Outlet />
-                  </PortalLayout>
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<CustomerPortal />} />
-              <Route path="tickets" element={<CustomerTickets />} />
-              <Route path="tickets/:id" element={<TicketDetails />} />
-              <Route path="kb" element={<KnowledgeBase />} />
-              <Route path="support" element={<Support />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-
-            {/* Catch-all route for 404 */}
+          {/* Admin Routes */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'head_admin']}>
+                <AdminLayout>
+                  <Outlet />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DashboardPage />} />
+            <Route path="tickets" element={<TicketsPage />} />
+            <Route path="tickets/:id" element={<AdminTicketDetailsPage />} />
+            <Route path="agents" element={<ManageAgentsPage />} />
+            <Route path="users" element={<UsersPage />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="invite-customers" element={<InviteCustomersPage />} />
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+          </Route>
+
+          {/* Agent Routes */}
+          <Route
+            path="/agent"
+            element={
+              <ProtectedRoute allowedRoles={['agent']}>
+                <AgentLayout>
+                  <Outlet />
+                </AgentLayout>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AgentDashboardPage />} />
+            <Route path="tickets" element={<AgentTicketListPage />} />
+            <Route path="tickets/:id" element={<AgentTicketDetailsPage />} />
+            <Route path="queue" element={<TicketQueuePage />} />
+            <Route path="assigned" element={<AssignedTicketsPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+
+          {/* Customer Portal Routes */}
+          <Route
+            path="/portal"
+            element={
+              <ProtectedRoute allowedRoles={['customer']}>
+                <PortalLayout>
+                  <Outlet />
+                </PortalLayout>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<CustomerPortal />} />
+            <Route path="tickets" element={<CustomerTickets />} />
+            <Route path="tickets/:id" element={<TicketDetails />} />
+            <Route path="kb" element={<KnowledgeBase />} />
+            <Route path="support" element={<Support />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+
+          {/* Catch-all route for 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </div>
     </QueryClientProvider>
   );

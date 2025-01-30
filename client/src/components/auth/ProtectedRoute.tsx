@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState, FC } from 'react';
-import { useLocation, Navigate } from 'react-router-dom';
+import { useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useUserStore } from '@/stores/userStore';
 import { Loader2 } from 'lucide-react';
 
@@ -12,18 +12,27 @@ interface Props {
 
 export const ProtectedRoute: FC<Props> = ({ children, allowedRoles }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { currentUser, isLoading, checkAuth } = useUserStore();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     const initAuth = async () => {
       if (!currentUser && !isLoading) {
         await checkAuth();
       }
-      setIsInitialLoad(false);
+      if (mounted) {
+        setIsInitialLoad(false);
+      }
     };
 
     initAuth();
+
+    return () => {
+      mounted = false;
+    };
   }, [checkAuth, currentUser, isLoading]);
 
   // Show loading state during initial load or auth check
@@ -66,19 +75,24 @@ export const ProtectedRoute: FC<Props> = ({ children, allowedRoles }) => {
 
     if (!hasAccess) {
       // Redirect to appropriate home page based on user role
-      switch (currentUser.role) {
-        case 'head_admin':
-        case 'admin':
-          return <Navigate to="/admin" replace />;
-        case 'agent':
-          return <Navigate to="/agent" replace />;
-        case 'customer':
-          return <Navigate to="/portal" replace />;
-        default:
-          return <Navigate to="/" replace />;
-      }
+      const redirectPath = (() => {
+        switch (currentUser.role) {
+          case 'head_admin':
+          case 'admin':
+            return '/admin';
+          case 'agent':
+            return '/agent';
+          case 'customer':
+            return '/portal';
+          default:
+            return '/';
+        }
+      })();
+
+      return <Navigate to={redirectPath} replace />;
     }
   }
 
+  // Wrap children in a fragment to preserve state during transitions
   return <>{children}</>;
 };
