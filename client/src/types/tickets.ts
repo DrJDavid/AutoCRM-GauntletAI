@@ -11,7 +11,7 @@ export interface Ticket extends Omit<DbTicket, 'current_description'> {
 // Ticket with all relations loaded
 export interface TicketWithRelations extends DbTicket {
   customer: DbProfile;
-  assigned_agent?: DbProfile;
+  assigned_agent: DbProfile | null;
   messages: DbTicketMessage[];
 }
 
@@ -25,7 +25,7 @@ export interface CreateTicketForm {
 
 export interface UpdateTicketForm {
   title?: string;
-  current_description?: string;
+  description?: string;
   category?: TicketCategory;
   priority?: TicketPriority;
   status?: TicketStatus;

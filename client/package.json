@@ -1,0 +1,17 @@
+{
+  "scripts": {
+    "test": "vitest",
+    "test:integration": "vitest integration",
+    "test:watch": "vitest watch"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^26.0.0",
+    "vite-tsconfig-paths": "^5.1.4"
+  },
+  "dependencies": {
+    "react-router-dom": "^6.28.2"
+  }
+}

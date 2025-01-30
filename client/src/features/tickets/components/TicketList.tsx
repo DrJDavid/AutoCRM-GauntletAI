@@ -3,15 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
-import type { Ticket } from '@/types';
-
-export interface TicketListProps {
-  tickets: Ticket[];
-  onTicketSelect?: (ticketId: string) => void;
-  loading?: boolean;
-  showAssignee?: boolean;
-  showCustomer?: boolean;
-}
+import type { TicketListProps } from '../types';
 
 export const TicketList: FC<TicketListProps> = ({
   tickets,
@@ -85,15 +77,18 @@ export const TicketList: FC<TicketListProps> = ({
               >
                 {ticket.priority}
               </Badge>
+              <Badge variant="outline">{ticket.category}</Badge>
             </div>
           </div>
           <div className="flex justify-between items-center text-sm text-muted-foreground">
-            {showCustomer && ticket.customer && (
-              <span>Customer: {ticket.customer.email}</span>
-            )}
-            {showAssignee && ticket.assigned_agent && (
-              <span>Assigned to: {ticket.assigned_agent.email}</span>
-            )}
+            <div className="flex gap-4">
+              {showCustomer && ticket.customer && (
+                <span>Customer: {ticket.customer.email}</span>
+              )}
+              {showAssignee && ticket.assigned_agent && (
+                <span>Assigned to: {ticket.assigned_agent.email}</span>
+              )}
+            </div>
             <span>
               Created {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
             </span>

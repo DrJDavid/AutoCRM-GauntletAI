@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState, FC } from 'react';
-import { useLocation, Redirect } from 'wouter';
+import { useLocation, Navigate } from 'react-router-dom';
 import { useUserStore } from '@/stores/userStore';
 import { Loader2 } from 'lucide-react';
 
@@ -11,7 +11,7 @@ interface Props {
 }
 
 export const ProtectedRoute: FC<Props> = ({ children, allowedRoles }) => {
-  const [location] = useLocation();
+  const location = useLocation();
   const { currentUser, isLoading, checkAuth } = useUserStore();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
@@ -45,14 +45,13 @@ export const ProtectedRoute: FC<Props> = ({ children, allowedRoles }) => {
 
     // Find the matching login path based on the current location
     const matchingPath = Object.entries(loginPaths).find(([prefix]) => 
-      location.startsWith(prefix)
+      location.pathname.startsWith(prefix)
     );
 
     const loginPath = matchingPath ? matchingPath[1] : '/login';
-    const redirectParam = encodeURIComponent(location);
+    const redirectParam = encodeURIComponent(location.pathname + location.search);
     
-    console.log('Redirecting to:', `${loginPath}?redirect=${redirectParam}`);
-    return <Redirect to={`${loginPath}?redirect=${redirectParam}`} />;
+    return <Navigate to={`${loginPath}?redirect=${redirectParam}`} replace />;
   }
 
   // Check role-based access
@@ -70,13 +69,13 @@ export const ProtectedRoute: FC<Props> = ({ children, allowedRoles }) => {
       switch (currentUser.role) {
         case 'head_admin':
         case 'admin':
-          return <Redirect to="/admin" />;
+          return <Navigate to="/admin" replace />;
         case 'agent':
-          return <Redirect to="/agent" />;
+          return <Navigate to="/agent" replace />;
         case 'customer':
-          return <Redirect to="/portal" />;
+          return <Navigate to="/portal" replace />;
         default:
-          return <Redirect to="/" />;
+          return <Navigate to="/" replace />;
       }
     }
   }

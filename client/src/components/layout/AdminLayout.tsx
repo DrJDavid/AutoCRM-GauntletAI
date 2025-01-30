@@ -20,13 +20,13 @@ interface SidebarItem {
 }
 
 const sidebarItems: SidebarItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
+  { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
   { icon: TicketCheck, label: 'Tickets', href: '/admin/tickets' },
   { icon: BarChart3, label: 'Analytics', href: '/admin/analytics' },
   { icon: Users, label: 'Users', href: '/admin/users' },
-  { icon: UserPlus, label: 'Invite Customers', href: '/admin/invite-customers' },
-  { icon: Mail, label: 'Manage Agents', href: '/admin/manage-agents' },
+  { icon: UserPlus, label: 'Manage Agents', href: '/admin/agents' },
   { icon: Settings, label: 'Settings', href: '/admin/settings' },
+  { icon: Mail, label: 'Invite Customers', href: '/admin/invite-customers' },
 ];
 
 interface AdminLayoutProps {

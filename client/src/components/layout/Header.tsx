@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'wouter';
+import { Link, useNavigate } from 'react-router-dom';
 import { useUserStore } from '@/stores/userStore';
 import {
   Bell,
@@ -20,13 +20,13 @@ import { Sidebar } from './Sidebar';
 
 export function Header() {
   const [open, setOpen] = useState(false);
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { currentUser, logout } = useUserStore();
 
   const handleLogout = async () => {
     try {
       await logout();
-      setLocation('/');
+      navigate('/');
     } catch (error) {
       console.error('Logout failed:', error);
     }
@@ -46,7 +46,7 @@ export function Header() {
           </SheetContent>
         </Sheet>
 
-        <Link href="/" className="font-semibold text-xl">
+        <Link to="/" className="font-semibold text-xl">
           AutoCRM
         </Link>
 

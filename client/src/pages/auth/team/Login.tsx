@@ -32,8 +32,6 @@ const teamLoginSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
-type TeamRole = 'admin' | 'agent';
-
 export default function TeamLogin() {
   const [, setLocation] = useLocation();
   const { login } = useUserStore();
@@ -56,6 +54,7 @@ export default function TeamLogin() {
         type: 'team',
         email: values.email,
         password: values.password,
+        organizationSlug: values.organizationSlug,
       });
 
       toast({
@@ -63,10 +62,24 @@ export default function TeamLogin() {
         description: 'You have successfully logged in.',
       });
 
-      // Redirect based on role
-      const user = useUserStore.getState().currentUser;
-      const redirectPath = user?.role === 'agent' ? '/agent' : '/admin';
-      setLocation(redirectPath);
+      // Get current user and redirect based on role
+      const { currentUser } = useUserStore.getState();
+      
+      if (!currentUser) {
+        throw new Error('User not found after login');
+      }
+
+      switch (currentUser.role) {
+        case 'head_admin':
+        case 'admin':
+          setLocation('/admin');
+          break;
+        case 'agent':
+          setLocation('/agent');
+          break;
+        default:
+          setLocation('/unauthorized');
+      }
     } catch (error) {
       console.error('Login error:', error);
       toast({
@@ -89,7 +102,7 @@ export default function TeamLogin() {
         <div className="relative z-20 mt-auto">
           <blockquote className="space-y-2">
             <p className="text-lg">
-              Streamline your customer support and team collaboration with AutoCRM's powerful tools and insights.
+              Access your organization's dashboard to manage support tickets, team members, and settings.
             </p>
           </blockquote>
         </div>
@@ -99,7 +112,7 @@ export default function TeamLogin() {
           <div className="flex flex-col space-y-2 text-center">
             <h1 className="text-2xl font-semibold tracking-tight">Team Login</h1>
             <p className="text-sm text-muted-foreground">
-              Enter your organization ID and credentials to login
+              Sign in to access your organization's dashboard
             </p>
           </div>
 
@@ -115,6 +128,9 @@ export default function TeamLogin() {
                       <Input
                         placeholder="your-org-name"
                         {...field}
+                        onChange={(e) => {
+                          field.onChange(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'));
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -160,7 +176,7 @@ export default function TeamLogin() {
                 className="w-full"
                 disabled={isLoading}
               >
-                {isLoading ? 'Logging in...' : 'Login'}
+                {isLoading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
           </Form>
@@ -173,8 +189,14 @@ export default function TeamLogin() {
             </p>
             <p className="px-8 text-center text-sm text-muted-foreground">
               Need to create an account?{' '}
-              <Link href="/auth/agent/register" className="underline underline-offset-4 hover:text-primary">
+              <Link href="/auth/team/register" className="underline underline-offset-4 hover:text-primary">
                 Register here
+              </Link>
+            </p>
+            <p className="px-8 text-center text-sm text-muted-foreground">
+              Have an invite?{' '}
+              <Link href="/auth/team/accept-invite" className="underline underline-offset-4 hover:text-primary">
+                Accept invitation
               </Link>
             </p>
           </div>

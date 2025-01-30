@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'wouter';
+import { Link, useLocation } from 'react-router-dom';
 import { useUserStore } from '@/stores/userStore';
 import {
   LayoutDashboard,
@@ -23,7 +23,7 @@ import type { UserRole } from '@/types';
 
 type NavigationItem = {
   name: string;
-  href: string;
+  to: string;
   icon: React.ElementType;
   roles: UserRole[];
 };
@@ -32,25 +32,25 @@ const navigation: NavigationItem[] = [
   // Customer Portal Navigation
   { 
     name: 'My Dashboard', 
-    href: '/portal/dashboard', 
+    to: '/portal/dashboard', 
     icon: LayoutDashboard,
     roles: ['customer']
   },
   { 
     name: 'Submit Ticket', 
-    href: '/portal/tickets/new', 
+    to: '/portal/tickets/new', 
     icon: Plus,
     roles: ['customer']
   },
   { 
     name: 'My Tickets', 
-    href: '/portal/tickets', 
+    to: '/portal/tickets', 
     icon: Ticket,
     roles: ['customer']
   },
   { 
     name: 'Knowledge Base', 
-    href: '/portal/kb', 
+    to: '/portal/kb', 
     icon: FileText,
     roles: ['customer']
   },
@@ -58,135 +58,115 @@ const navigation: NavigationItem[] = [
   // Admin Navigation
   { 
     name: 'Admin Dashboard', 
-    href: '/admin/dashboard', 
+    to: '/admin/dashboard', 
     icon: LayoutDashboard,
     roles: ['admin']
   },
   { 
-    name: 'All Tickets', 
-    href: '/admin/tickets/all', 
-    icon: List,
+    name: 'Tickets', 
+    to: '/admin/tickets', 
+    icon: Ticket,
     roles: ['admin']
   },
   { 
-    name: 'Analytics', 
-    href: '/admin/tickets/analytics', 
-    icon: BarChart,
+    name: 'Manage Agents', 
+    to: '/admin/agents', 
+    icon: UserCog,
     roles: ['admin']
   },
   { 
-    name: 'User Management', 
-    href: '/admin/users', 
+    name: 'Users', 
+    to: '/admin/users', 
     icon: Users,
     roles: ['admin']
   },
   { 
+    name: 'Analytics', 
+    to: '/admin/analytics', 
+    icon: BarChart,
+    roles: ['admin']
+  },
+  { 
     name: 'Settings', 
-    href: '/admin/settings', 
+    to: '/admin/settings', 
     icon: Settings,
     roles: ['admin']
   },
-  {
-    name: 'Manage Agents',
-    href: '/admin/manage-agents',
-    icon: UserCog,
-    roles: ['admin'],
+  { 
+    name: 'Invite Customers', 
+    to: '/admin/invite-customers', 
+    icon: UserPlus,
+    roles: ['admin']
   },
 
   // Agent Navigation
   { 
-    name: 'Dashboard', 
-    href: '/agent', 
+    name: 'Agent Dashboard', 
+    to: '/agent/dashboard', 
     icon: LayoutDashboard,
     roles: ['agent']
   },
   { 
-    name: 'My Assigned', 
-    href: '/agent/assigned', 
+    name: 'Ticket Queue', 
+    to: '/agent/queue', 
     icon: InboxIcon,
     roles: ['agent']
   },
   { 
-    name: 'Ticket Queue', 
-    href: '/agent/queue', 
+    name: 'Assigned Tickets', 
+    to: '/agent/assigned', 
     icon: List,
     roles: ['agent']
   },
   { 
-    name: 'Knowledge Base', 
-    href: '/agent/kb/articles', 
-    icon: FileText,
+    name: 'All Tickets', 
+    to: '/agent/tickets', 
+    icon: Ticket,
     roles: ['agent']
-  },
-
-  // Common Navigation
-  { 
-    name: 'Help', 
-    href: '/kb', 
-    icon: HelpCircle,
-    roles: ['customer', 'agent', 'admin']
-  },
+  }
 ];
 
 export function Sidebar() {
-  const [location, setLocation] = useLocation();
-  const { currentUser, logout } = useUserStore();
+  const location = useLocation();
+  const { currentUser } = useUserStore();
   const { toast } = useToast();
 
-  if (!currentUser) return null;
-
-  const userNavigation = navigation.filter(item => 
-    item.roles.includes(currentUser.role as UserRole)
+  const filteredNavigation = navigation.filter(item => 
+    item.roles.some(role => {
+      if (role === 'admin') {
+        return currentUser?.role === 'admin' || currentUser?.role === 'head_admin';
+      }
+      return currentUser?.role === role;
+    })
   );
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      setLocation('/');
-    } catch (error) {
-      console.error('Logout failed:', error);
-      toast({
-        title: "Error",
-        description: "Failed to log out. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
-    <div className="flex flex-col h-full border-r bg-gray-50/40">
-      <ScrollArea className="flex-1 p-4">
-        <nav className="flex flex-col gap-1">
-          {userNavigation.map((item) => {
+    <div className="flex h-full w-full flex-col gap-4 border-r bg-background">
+      <ScrollArea className="flex-1">
+        <div className="flex flex-col gap-2 p-4">
+          {filteredNavigation.map((item) => {
             const Icon = item.icon;
+            const isActive = location.pathname === item.to || 
+                           location.pathname.startsWith(`${item.to}/`);
+
             return (
-              <Link key={item.href} href={item.href}>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-start gap-2",
-                    location === item.href && "bg-gray-100"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.name}
-                </Button>
+              <Link
+                key={item.name}
+                to={item.to}
+                className={cn(
+                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-accent hover:text-accent-foreground'
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {item.name}
               </Link>
             );
           })}
-        </nav>
+        </div>
       </ScrollArea>
-
-      <div className="p-4 border-t">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-2 text-red-500 hover:text-red-600 hover:bg-red-50"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-4 w-4" />
-          Logout
-        </Button>
-      </div>
     </div>
   );
 }

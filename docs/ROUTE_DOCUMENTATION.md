@@ -6,87 +6,83 @@
 /                                  # Landing Page
 ├── /auth                         # Authentication Routes
 │   ├── /team                     # Team Authentication
+│   │   ├── /login               # Team Login
 │   │   ├── /register            # Team Registration
-│   │   └── /login               # Team Login
-│   └── /customer                # Customer Authentication
-│       ├── /register            # Customer Registration
-│       └── /login               # Customer Login
+│   │   ├── /accept-invite       # Accept Team Invitation
+│   │   ├── /join-request        # Request to Join Team
+│   │   └── /create-account      # Create Team Account
+│   ├── /customer                # Customer Authentication
+│   │   ├── /login              # Customer Login
+│   │   ├── /register           # Customer Registration
+│   │   └── /accept-invite      # Accept Customer Invitation
+│   └── /reset-password          # Password Reset
 │
 ├── /admin                        # Admin Portal
-│   ├── /dashboard               # Admin Dashboard
 │   ├── /tickets                 # Ticket Management
 │   │   ├── /                   # Ticket List
-│   │   ├── /new                # Create Ticket
 │   │   └── /:id                # Ticket Details
+│   ├── /agents                  # Manage Agents
 │   ├── /users                   # User Management
-│   │   ├── /                   # User List
-│   │   └── /:id                # User Details
+│   ├── /analytics               # Analytics Dashboard
 │   ├── /settings                # Organization Settings
-│   └── /invites                 # Invitation Management
+│   └── /invite-customers        # Customer Invitation Management
 │
 ├── /agent                        # Agent Portal
-│   ├── /dashboard               # Agent Dashboard
-│   └── /tickets                 # Ticket Queue
-│       ├── /                   # Ticket List
-│       ├── /new                # Create Ticket
-│       └── /:id                # Ticket Details
+│   ├── /tickets                 # Ticket Management
+│   │   ├── /                   # Ticket List
+│   │   └── /:id                # Ticket Details
+│   ├── /queue                   # Ticket Queue
+│   └── /assigned                # Assigned Tickets
 │
-└── /portal                       # Customer Portal
-    ├── /dashboard               # Customer Dashboard
-    ├── /tickets                 # Customer Tickets
-    │   ├── /                   # Ticket List
-    │   ├── /new                # Create Ticket
-    │   └── /:id                # Ticket Details
-    └── /kb                      # Knowledge Base
+├── /portal                       # Customer Portal
+│   ├── /tickets                 # Customer Tickets
+│   │   ├── /                   # Ticket List
+│   │   └── /:id                # Ticket Details
+│   ├── /kb                      # Knowledge Base
+│   └── /support                 # Support Center
+│
+└── /org                         # Organization Management
+    ├── /new                     # Create Organization
+    ├── /setup                   # Organization Setup
+    ├── /customers/invite        # Invite Customers
+    └── /agents/invite           # Invite Agents
 ```
 
 ## Implementation Details
 
 ### Authentication Components
 
+#### Team Login (`/auth/team/login`)
+- Component: `Login.tsx` in `/pages/auth/team/`
+- Features:
+  - Organization slug, email, and password form
+  - Role-based routing:
+    - Admin/Head Admin -> `/admin`
+    - Agent -> `/agent`
+    - Invalid -> `/unauthorized`
+  - Error handling for invalid credentials
+  - Loading states during authentication
+  - Toast notifications for success/failure
+
 #### Team Registration (`/auth/team/register`)
 - Component: `Register.tsx` in `/pages/auth/team/`
 - Features:
   - Email and password form with validation
-  - Checks for pending invitation using `validate_invite_by_email`
+  - Organization slug validation
+  - Checks for pending invitation
   - Creates user account and associates with organization
   - Assigns role based on invitation
   - Error handling for invalid/expired invitations
-  - Loading states during async operations
-  - Redirects to login on success
-
-#### Customer Registration (`/auth/customer/register`)
-- Component: `Register.tsx` in `/pages/auth/customer/`
-- Features:
-  - Similar to team registration
-  - Role fixed to 'customer'
-  - Organization association from invitation
-  - Customer-specific validation rules
-  - Portal-specific redirects
-
-#### Team Login (`/auth/team/login`)
-- Component: `Login.tsx` in `/pages/auth/team/`
-- Features:
-  - Email/password authentication
-  - Role-based dashboard redirection
-  - Error handling for invalid credentials
-  - Loading states during authentication
-  - "Remember me" functionality
 
 #### Customer Login (`/auth/customer/login`)
 - Component: `Login.tsx` in `/pages/auth/customer/`
 - Features:
-  - Similar to team login
+  - Email/password authentication
   - Portal-specific redirects
   - Customer-focused error messages
   - Password reset option
 
 ### Admin Portal Components
-
-#### Dashboard (`/admin/dashboard`)
-- Overview of organization metrics
-- Quick access to common actions
-- Real-time updates using Supabase Realtime
 
 #### Ticket Management (`/admin/tickets`)
 - List view with filtering and sorting
@@ -99,106 +95,102 @@
 - Role management
 - Access control
 
-#### Invitation Management (`/admin/invites`)
-- Component: `InviteManagement.tsx`
-- Features:
-  - Create new invitations
-  - View pending invitations
-  - Revoke active invitations
-  - Track invitation status
-  - Role selection for team members
-  - Error handling and validation
+#### Analytics (`/admin/analytics`)
+- Organization metrics
+- Performance tracking
+- Usage statistics
 
 ### Agent Portal Components
 
-#### Dashboard (`/agent/dashboard`)
-- Ticket queue overview
-- Performance metrics
-- Quick actions
-
-#### Ticket Queue (`/agent/tickets`)
+#### Ticket Management (`/agent/tickets`)
 - Assigned tickets list
 - Ticket details view
 - Update functionality
 - Customer communication
 
-### Customer Portal Components
+#### Ticket Queue (`/agent/queue`)
+- Unassigned tickets
+- Priority management
+- Assignment options
 
-#### Dashboard (`/portal/dashboard`)
-- Ticket overview
-- Quick ticket creation
-- Status updates
+### Customer Portal Components
 
 #### Tickets (`/portal/tickets`)
 - Ticket history
 - Create new tickets
 - Communication with agents
 
+#### Knowledge Base (`/portal/kb`)
+- Documentation
+- FAQs
+- Self-service resources
+
 ## Security Implementation
 
-### Route Guards
-- `ProtectedRoute` component wraps all authenticated routes
-- Role-based access control using Zustand store
-- Session validation on navigation
-- Automatic redirect for unauthorized access
+### Route Protection
+```typescript
+// ProtectedRoute component
+<Route path="/admin">
+  <ProtectedRoute allowedRoles={['admin', 'head_admin']}>
+    <AdminLayout>
+      <Switch>
+        <Route path="/admin" component={AdminDashboard} />
+        // ... other admin routes
+      </Switch>
+    </AdminLayout>
+  </ProtectedRoute>
+</Route>
+```
 
 ### Authentication Flow
-1. User registration:
-   ```typescript
-   // Check invitation
-   const { data, error } = await supabase.rpc('validate_invite_by_email', {
-     email_param: email,
-     type_param: role
-   });
+```typescript
+// Team Login
+const onSubmit = async (values) => {
+  await login({
+    type: 'team',
+    email: values.email,
+    password: values.password,
+    organizationSlug: values.organizationSlug,
+  });
 
-   // Create account
-   await signUp(email, password, role, organizationId);
-   ```
-
-2. Login process:
-   ```typescript
-   // Authenticate
-   const { data, error } = await supabase.auth.signInWithPassword({
-     email,
-     password
-   });
-
-   // Get user profile and role
-   await getUserProfile();
-   ```
-
-### Error Handling
-- Form validation using Zod
-- API error handling with toast notifications
-- Loading states during async operations
-- Error boundaries for component failures
+  const { currentUser } = useUserStore.getState();
+  
+  switch (currentUser.role) {
+    case 'head_admin':
+    case 'admin':
+      setLocation('/admin');
+      break;
+    case 'agent':
+      setLocation('/agent');
+      break;
+    default:
+      setLocation('/unauthorized');
+  }
+};
+```
 
 ## State Management
 
-### Authentication Store
-- User session state
-- Role and permissions
-- Organization context
-
-### Invitation Store
-- Pending invitations
-- Creation/revocation actions
-- Status tracking
+### User Store
+```typescript
+interface UserStore {
+  currentUser: User | null;
+  login: (credentials: AuthCredentials) => Promise<void>;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
+}
+```
 
 ## Future Enhancements
-1. Email Integration:
-   - Invitation emails
-   - Welcome messages
-   - Password reset
-2. Enhanced Security:
+1. Enhanced Security:
    - 2FA support
    - Session management
    - Access logging
-3. UI/UX Improvements:
-   - Enhanced form validation
-   - Better error messages
-   - Loading skeletons
-4. Analytics:
-   - User activity tracking
-   - Performance monitoring
-   - Usage statistics
+2. UI/UX Improvements:
+   - Better loading states
+   - Error boundaries
+   - Form validation
+3. Feature Additions:
+   - Public knowledge base
+   - Team chat
+   - Automated workflows

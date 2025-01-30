@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { useUserStore } from '@/stores/userStore';
 import { useTicketStore } from '@/stores/ticketStore';
@@ -14,50 +14,22 @@ export default function AdminTicketDetailsPage() {
   const [, params] = useRoute('/admin/tickets/:id');
   const [, setLocation] = useLocation();
   const { currentUser } = useUserStore();
-  const { tickets, fetchTickets } = useTicketStore();
-  const [ticket, setTicket] = useState<DbTicket | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { selectedTicket, isLoading, error, getTicketById, fetchTickets } = useTicketStore();
 
   useEffect(() => {
     if (params?.id) {
-      fetchTicketDetails(params.id);
+      getTicketById(params.id);
     }
-  }, [params?.id]);
-
-  const fetchTicketDetails = async (ticketId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('tickets')
-        .select(`
-          *,
-          customer:profiles!tickets_customer_id_fkey(*),
-          assigned_agent:profiles!tickets_assigned_agent_id_fkey(*)
-        `)
-        .eq('id', ticketId)
-        .single();
-
-      if (error) throw error;
-      setTicket(data);
-    } catch (error) {
-      console.error('Error fetching ticket:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load ticket details',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [params?.id, getTicketById]);
 
   const handleStatusChange = async (newStatus: DbTicket['status']) => {
-    if (!ticket) return;
+    if (!selectedTicket) return;
 
     try {
       const { error } = await supabase
         .from('tickets')
         .update({ status: newStatus })
-        .eq('id', ticket.id);
+        .eq('id', selectedTicket.id);
 
       if (error) throw error;
 
@@ -66,7 +38,7 @@ export default function AdminTicketDetailsPage() {
         description: 'Ticket status updated successfully',
       });
 
-      fetchTicketDetails(ticket.id);
+      getTicketById(selectedTicket.id);
       fetchTickets();
     } catch (error) {
       console.error('Error updating ticket status:', error);
@@ -79,13 +51,13 @@ export default function AdminTicketDetailsPage() {
   };
 
   const handleAssignToMe = async () => {
-    if (!ticket || !currentUser) return;
+    if (!selectedTicket || !currentUser) return;
 
     try {
       const { error } = await supabase
         .from('tickets')
-        .update({ assigned_agent_id: currentUser.id })
-        .eq('id', ticket.id);
+        .update({ assigned_to: currentUser.id })
+        .eq('id', selectedTicket.id);
 
       if (error) throw error;
 
@@ -94,7 +66,7 @@ export default function AdminTicketDetailsPage() {
         description: 'Ticket assigned successfully',
       });
 
-      fetchTicketDetails(ticket.id);
+      getTicketById(selectedTicket.id);
       fetchTickets();
     } catch (error) {
       console.error('Error assigning ticket:', error);
@@ -114,13 +86,13 @@ export default function AdminTicketDetailsPage() {
     );
   }
 
-  if (!ticket) {
+  if (error || !selectedTicket) {
     return (
       <div className="p-6">
         <div className="text-center">
           <h3 className="font-semibold">Ticket Not Found</h3>
           <p className="text-sm text-muted-foreground">
-            The ticket you're looking for doesn't exist or you don't have permission to view it.
+            {error?.message || "The ticket you're looking for doesn't exist or you don't have permission to view it."}
           </p>
           <Button
             variant="outline"
@@ -153,33 +125,33 @@ export default function AdminTicketDetailsPage() {
           <CardHeader>
             <div className="flex justify-between items-start">
               <div>
-                <CardTitle className="text-2xl font-bold">{ticket.title}</CardTitle>
+                <CardTitle className="text-2xl font-bold">{selectedTicket.title}</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Ticket #{ticket.id}
+                  Ticket #{selectedTicket.id}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <Badge
                   variant={
-                    ticket.priority === 'urgent'
+                    selectedTicket.priority === 'urgent'
                       ? 'destructive'
-                      : ticket.priority === 'high'
+                      : selectedTicket.priority === 'high'
                       ? 'default'
                       : 'secondary'
                   }
                 >
-                  {ticket.priority}
+                  {selectedTicket.priority}
                 </Badge>
                 <Badge
                   variant={
-                    ticket.status === 'open'
+                    selectedTicket.status === 'open'
                       ? 'default'
-                      : ticket.status === 'in_progress'
+                      : selectedTicket.status === 'in_progress'
                       ? 'secondary'
                       : 'outline'
                   }
                 >
-                  {ticket.status}
+                  {selectedTicket.status}
                 </Badge>
               </div>
             </div>
@@ -188,12 +160,12 @@ export default function AdminTicketDetailsPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <h4 className="font-semibold mb-2">Customer</h4>
-                <p>{ticket.customer?.email || 'Unknown'}</p>
+                <p>{selectedTicket.customer?.email || 'Unknown'}</p>
               </div>
               <div>
                 <h4 className="font-semibold mb-2">Assigned Agent</h4>
-                {ticket.assigned_agent ? (
-                  <p>{ticket.assigned_agent.email}</p>
+                {selectedTicket.assigned_agent ? (
+                  <p>{selectedTicket.assigned_agent.email}</p>
                 ) : (
                   <Button
                     variant="outline"
@@ -208,13 +180,13 @@ export default function AdminTicketDetailsPage() {
 
             <div>
               <h4 className="font-semibold mb-2">Description</h4>
-              <p className="whitespace-pre-wrap">{ticket.current_description}</p>
+              <p className="whitespace-pre-wrap">{selectedTicket.description}</p>
             </div>
 
             <div>
               <h4 className="font-semibold mb-2">Actions</h4>
               <div className="flex gap-2">
-                {ticket.status === 'open' && (
+                {selectedTicket.status === 'open' && (
                   <Button
                     variant="default"
                     onClick={() => handleStatusChange('in_progress')}
@@ -222,7 +194,7 @@ export default function AdminTicketDetailsPage() {
                     Start Working
                   </Button>
                 )}
-                {ticket.status === 'in_progress' && (
+                {selectedTicket.status === 'in_progress' && (
                   <Button
                     variant="default"
                     onClick={() => handleStatusChange('resolved')}
@@ -230,7 +202,7 @@ export default function AdminTicketDetailsPage() {
                     Mark as Resolved
                   </Button>
                 )}
-                {ticket.status === 'resolved' && (
+                {selectedTicket.status === 'resolved' && (
                   <Button
                     variant="outline"
                     onClick={() => handleStatusChange('closed')}

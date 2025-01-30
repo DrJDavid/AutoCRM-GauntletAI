@@ -6,7 +6,7 @@ import type { DbProfile } from '@/types/database';
 interface AuthCredentials {
   email: string;
   password: string;
-  type?: 'team' | 'customer' | 'agent';
+  type?: 'team' | 'customer';
   organizationSlug?: string;
 }
 
@@ -92,10 +92,10 @@ export const useUserStore = create<UserState>()(
         }
       },
 
-      login: async ({ email, password, type }: AuthCredentials) => {
+      login: async ({ email, password, type, organizationSlug }: AuthCredentials) => {
         try {
           set({ isLoading: true, error: null });
-          console.log('Starting login process for:', { email, type });
+          console.log('Starting login process for:', { email, type, organizationSlug });
 
           // Perform login
           const { data: { session }, error: authError } = await supabase.auth.signInWithPassword({
@@ -162,14 +162,30 @@ export const useUserStore = create<UserState>()(
             const isTeamMember = ['head_admin', 'admin', 'agent'].includes(profile.role);
             const isCustomer = profile.role === 'customer';
 
-            if (type === 'team' && !isTeamMember) {
-              throw new Error('This login is for team members only.');
+            if (type === 'team') {
+              if (!isTeamMember) {
+                throw new Error('This login is for team members only.');
+              }
+              
+              // Validate organization slug for team login
+              if (!organizationSlug) {
+                throw new Error('Organization ID is required for team login');
+              }
+
+              // Check if organization exists
+              const { data: org, error: orgError } = await supabase
+                .from('organizations')
+                .select('id')
+                .eq('slug', organizationSlug)
+                .single();
+
+              if (orgError || !org) {
+                throw new Error('Organization not found');
+              }
             }
+            
             if (type === 'customer' && !isCustomer) {
               throw new Error('This login is for customers only.');
-            }
-            if (type === 'agent' && profile.role !== 'agent') {
-              throw new Error('This login is for agents only.');
             }
           }
 

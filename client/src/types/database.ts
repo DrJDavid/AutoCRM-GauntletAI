@@ -5,374 +5,80 @@
  */
 
 import { User } from "@supabase/supabase-js"
+import type { Database } from './supabase';
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+// Re-export the Json type
+export type { Json } from './supabase';
 
-// ==================== Organization Types ====================
+// Enum Types
+export type UserRole = Database['public']['Enums']['user_role'];
+export type TicketStatus = Database['public']['Enums']['ticket_status'];
+export type TicketPriority = Database['public']['Enums']['ticket_priority'];
+export type TicketCategory = 'account' | 'billing' | 'technical_issue' | 'other';
+export type InvitationType = Database['public']['Enums']['invitation_type'];
+export type InvitationStatus = Database['public']['Enums']['invitation_status'];
 
-/**
- * Organization entity with all its settings and contact information
- */
-export interface Organization {
-  id: string
-  name: string
-  slug: string
-  created_at: string
-  business_hours: Json | null
-  chat_settings: Json | null
-  contact_emails: Json | null
-  phone_numbers: Json | null
-  physical_addresses: Json | null
-  settings: Json | null
-  support_channels: Json | null
-}
+// Table Types
+export type DbOrganization = Database['public']['Tables']['organizations']['Row'];
+export type DbProfile = Database['public']['Tables']['profiles']['Row'];
+export type DbTicket = Database['public']['Tables']['tickets']['Row'];
+export type DbTicketMessage = Database['public']['Tables']['ticket_messages']['Row'];
+export type DbTicketAttachment = Database['public']['Tables']['ticket_attachments']['Row'];
+export type DbAiAgent = Database['public']['Tables']['ai_agents']['Row'];
+export type DbAiAgentAssignment = Database['public']['Tables']['ai_agent_assignments']['Row'];
+export type DbAiAgentResponse = Database['public']['Tables']['ai_agent_responses']['Row'];
+export type DbInvitation = Database['public']['Tables']['invitations']['Row'];
 
-/**
- * Member of an organization with their role
- */
-export interface OrganizationMember {
-  id: string
-  organization_id: string
-  profile_id: string
-  role: string
-  created_at: string | null
-  updated_at: string | null
-}
+// Insert Types
+export type DbOrganizationInsert = Database['public']['Tables']['organizations']['Insert'];
+export type DbProfileInsert = Database['public']['Tables']['profiles']['Insert'];
+export type DbTicketInsert = Database['public']['Tables']['tickets']['Insert'];
+export type DbTicketMessageInsert = Database['public']['Tables']['ticket_messages']['Insert'];
+export type DbTicketAttachmentInsert = Database['public']['Tables']['ticket_attachments']['Insert'];
+export type DbAiAgentInsert = Database['public']['Tables']['ai_agents']['Insert'];
+export type DbAiAgentAssignmentInsert = Database['public']['Tables']['ai_agent_assignments']['Insert'];
+export type DbAiAgentResponseInsert = Database['public']['Tables']['ai_agent_responses']['Insert'];
+export type DbInvitationInsert = Database['public']['Tables']['invitations']['Insert'];
 
-// ==================== User & Profile Types ====================
+// Update Types
+export type DbOrganizationUpdate = Database['public']['Tables']['organizations']['Update'];
+export type DbProfileUpdate = Database['public']['Tables']['profiles']['Update'];
+export type DbTicketUpdate = Database['public']['Tables']['tickets']['Update'];
+export type DbTicketMessageUpdate = Database['public']['Tables']['ticket_messages']['Update'];
+export type DbTicketAttachmentUpdate = Database['public']['Tables']['ticket_attachments']['Update'];
+export type DbAiAgentUpdate = Database['public']['Tables']['ai_agents']['Update'];
+export type DbAiAgentAssignmentUpdate = Database['public']['Tables']['ai_agent_assignments']['Update'];
+export type DbAiAgentResponseUpdate = Database['public']['Tables']['ai_agent_responses']['Update'];
+export type DbInvitationUpdate = Database['public']['Tables']['invitations']['Update'];
 
-/**
- * User profile with role and organization affiliation
- */
-export interface Profile {
-  id: string
-  email: string
-  role: 'head_admin' | 'admin' | 'agent' | 'customer'
-  organization_id: string
-  is_head_admin: boolean
-  full_name: string | null
-  avatar_url: string | null
-  created_at: string
-}
-
-// ==================== Team Types ====================
-
-/**
- * Team within an organization
- */
-export interface Team {
-  id: string
-  name: string
-  description: string | null
-  organization_id: string
-  metadata: Json | null
-  created_at: string
-}
-
-/**
- * Team member with their role
- */
-export interface TeamMember {
-  team_id: string
-  profile_id: string
-  role: string
-  created_at: string
-}
-
-// ==================== Ticket Types ====================
-
-/**
- * Ticket status options
- */
-export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
-
-/**
- * Ticket priority levels
- */
-export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent'
-
-/**
- * Ticket category options
- */
-export type TicketCategory = 'account' | 'billing' | 'technical_issue' | 'other'
-
-/**
- * Support ticket with all its details
- */
-export interface Ticket {
-  id: string
-  title: string
-  description: string | null
-  customer_id: string
-  organization_id: string
-  status: TicketStatus
-  priority: TicketPriority
-  category: TicketCategory
-  assigned_agent_id: string | null
-  created_at: string
-  updated_at: string
-  customer?: User
-  assigned_agent?: User
-  attachments?: Attachment[]
-  tags: string[] | null
-  metadata: Record<string, unknown> | null
-}
-
-/**
- * Message in a ticket thread
- */
-export interface TicketMessage {
-  id: string
-  ticket_id: string
-  author_id: string
-  content: string
-  is_internal: boolean | null
-  metadata: Json | null
-  created_at: string
-}
-
-/**
- * Comment on a ticket
- */
-export interface TicketComment {
-  id: string
-  ticket_id: string
-  author_id: string
-  content: string
-  parent_comment_id: string | null
-  is_internal: boolean | null
-  organization_id: string
-  created_at: string | null
-  updated_at: string | null
-  edited_at: string | null
-}
-
-// ==================== Attachment Types ====================
-
-/**
- * File attachment for tickets or comments
- */
-export interface Attachment {
-  id: string
-  file_name: string
-  file_size: number
-  file_path: string
-  content_type: string
-  ticket_id: string
-  comment_id: string | null
-  organization_id: string
-  uploaded_by: string
-  created_at: string
-  updated_at: string
-}
-
-// ==================== Knowledge Base Types ====================
-
-/**
- * Knowledge base article
- */
-export interface KnowledgeArticle {
-  id: string
-  title: string
-  content: string
-  author_id: string | null
-  organization_id: string
-  status: string
-  tags: string[] | null
-  metadata: Json | null
-  created_at: string
-  updated_at: string
-}
-
-// ==================== Analytics View Types ====================
-
-/**
- * Agent performance metrics
- */
-export interface AgentPerformance {
-  agent_name: string | null
-  assigned_agent_id: string | null
-  organization_id: string | null
-  total_tickets: number | null
-  resolved_tickets: number | null
-  avg_resolution_time: number | null
-}
-
-/**
- * Team performance metrics
- */
-export interface TeamPerformance {
-  team_id: string | null
-  team_name: string | null
-  team_size: number | null
-  total_tickets: number | null
-  resolved_tickets: number | null
-}
-
-/**
- * Ticket statistics by organization
- */
-export interface TicketStats {
-  organization_id: string | null
-  status: string | null
-  priority: string | null
-  ticket_count: number | null
-  avg_resolution_time: number | null
-}
-
-// ==================== Invitation Types ====================
-
-interface BaseInvite {
-  id: string
-  organization_id: string
-  email: string
-  token: string
-  accepted: boolean | null
-  created_at: string
-  expires_at: string
-}
-
-/**
- * Invitation for an agent to join an organization
- */
-export interface AgentOrganizationInvite extends BaseInvite {}
-
-/**
- * Invitation for a customer to join an organization
- */
-export interface CustomerOrganizationInvite extends BaseInvite {}
-
-// Add these type definitions to match SQL schema
-export type DbTicket = {
-  id: string;
-  title: string;
-  current_description: string;
-  status: TicketStatus;
-  priority: TicketPriority;
-  category: TicketCategory;
-  organization_id: string;
-  customer_id: string;
-  assigned_agent_id: string | null;
-  created_at: string;
-  updated_at: string;
-  is_deleted: boolean;
+// Extended Types with Relations
+export interface TicketWithRelations extends DbTicket {
   customer?: DbProfile;
   assigned_agent?: DbProfile;
-  attachments?: DbAttachment[];
-  tags: string[] | null;
-  metadata: Record<string, unknown> | null;
-};
-
-export type DbProfile = {
-  id: string;
-  email: string;
-  role: 'head_admin' | 'admin' | 'agent' | 'customer';
-  organization_id: string | null;
-  is_head_admin: boolean;
-  full_name: string | null;
-  avatar_url: string | null;
-  created_at: string;
-  updated_at: string;
-  is_deleted: boolean;
-};
-
-export interface TicketFilters {
-  status?: string[];
-  priority?: string[];
-  assignedTo?: string[];
-  category?: string[];
-  // Remove tags filter
+  messages?: DbTicketMessage[];
+  attachments?: DbTicketAttachment[];
 }
 
-// Add these to existing enums
-export type UserRole = 'head_admin' | 'admin' | 'agent' | 'customer';
+export interface TicketMessageWithRelations extends DbTicketMessage {
+  sender?: DbProfile;
+  attachments?: DbTicketAttachment[];
+}
 
-export type DbTicketMessage = {
-  id: string;
-  ticket_id: string;
-  author_id: string;
-  content: string;
-  is_internal: boolean;
-  metadata: Json | null;
-  created_at: string;
-  updated_at: string;
-  is_deleted: boolean;
-  author?: DbProfile;
-};
+export interface ProfileWithRelations extends DbProfile {
+  organization?: DbOrganization;
+  tickets?: DbTicket[];
+  assigned_tickets?: DbTicket[];
+}
 
-export type DbAttachment = {
-  id: string;
-  file_name: string;
-  file_size: number;
-  storage_path: string;
-  content_type: string;
-  ticket_id: string;
-  message_id: string | null;
-  organization_id: string;
-  uploaded_by: string;
-  created_at: string;
-  updated_at: string;
-  is_deleted: boolean;
-};
+export interface OrganizationWithRelations extends DbOrganization {
+  profiles?: DbProfile[];
+  tickets?: DbTicket[];
+  ai_agents?: DbAiAgent[];
+}
 
-export type DbOrganization = {
-  id: string;
-  name: string;
-  slug: string;
-  created_at: string;
-  updated_at: string;
-  is_deleted: boolean;
-  settings: {
-    business_hours?: {
-      start: string;
-      end: string;
-      timezone: string;
-      days: number[];
-    }
-    support_channels?: string[];
-    notification_preferences?: {
-      email?: boolean;
-      in_app?: boolean;
-      slack?: boolean;
-    }
-  } | null;
-};
-
-export type DbTeam = {
-  id: string;
-  name: string;
-  organization_id: string;
-  created_at: string;
-  updated_at: string;
-  is_deleted: boolean;
-  settings: Json | null;
-};
-
-export type DbTeamMember = {
-  id: string;
-  team_id: string;
-  profile_id: string;
-  role: string;
-  created_at: string;
-  updated_at: string;
-  is_deleted: boolean;
-};
-
-export type DbInvite = {
-  id: string;
-  email: string;
-  organization_id: string;
-  role: DbProfile['role'];
-  token: string;
-  expires_at: string;
-  created_at: string;
-  updated_at: string;
-  is_deleted: boolean;
-  accepted_at: string | null;
-};
+// Function Return Types
+export type GetUserRole = Database['public']['Functions']['get_user_role']['Returns'];
+export type GetUserOrganizationId = Database['public']['Functions']['get_user_organization_id']['Returns'];
+export type GetTicketStats = Database['public']['Functions']['get_ticket_stats']['Returns'];
+export type GetAgentPerformance = Database['public']['Functions']['get_agent_performance']['Returns'];
+export type ValidateInviteByEmail = Database['public']['Functions']['validate_invite_by_email']['Returns']; 
