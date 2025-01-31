@@ -40,10 +40,11 @@ export const TicketReplyForm: FC<TicketReplyFormProps> = ({ ticketId }) => {
 
     try {
       await addMessage({
-        ticket_id: ticketId,
-        message: values.message,
-        sender_id: currentUser.id,
-        is_internal: false,
+          ticket_id: ticketId,
+          message: values.message,
+          sender_id: currentUser.id,
+          is_internal: false,
+          metadata: null
       });
       form.reset();
     } catch (error) {

@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -61,7 +61,7 @@ export default function OrganizationNew() {
         description: 'Your organization has been created successfully.',
       });
 
-      navigate('/org/setup');
+      navigate('/admin');
     } catch (error) {
       toast({
         variant: 'destructive',

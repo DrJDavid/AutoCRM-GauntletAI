@@ -166,8 +166,10 @@ serve(async (req) => {
       JSON.stringify({
         message: 'Organization created successfully',
         data: {
+          organization: orgData,
           organizationId: orgData.id,
-          adminId: authData.user.id
+          adminId: authData.user.id,
+          setupComplete: false
         }
       }),
       {

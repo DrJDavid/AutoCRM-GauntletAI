@@ -11,8 +11,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import type { DbTicket, TicketStatus, TicketPriority } from '@/types/database';
+import type { DbTicket } from '@/types/database';
 import type { Ticket } from '@/features/tickets/types';
 
 interface CreateTicketData {

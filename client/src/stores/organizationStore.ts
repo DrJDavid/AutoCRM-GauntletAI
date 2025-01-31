@@ -58,7 +58,12 @@ interface OrganizationStore {
   error: string | null;
   loadOrganization: (id: string) => Promise<void>;
   updateOrganization: (updates: Partial<Organization>) => Promise<void>;
-  createOrganization: (data: CreateOrganizationData) => Promise<{ organizationId: string; adminId: string }>;
+  createOrganization: (data: CreateOrganizationData) => Promise<{ 
+    organizationId: string; 
+    adminId: string;
+    slug: string;
+    session: any;
+  }>;
   isBusinessHours: () => boolean;
   isChatAvailable: () => boolean;
 }
@@ -120,6 +125,7 @@ export const useOrganizationStore = create<OrganizationStore>((set, get) => ({
     set({ loading: true, error: null });
     
     try {
+      // Create organization through Edge Function
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-organization`, {
         method: 'POST',
         headers: {
@@ -135,14 +141,38 @@ export const useOrganizationStore = create<OrganizationStore>((set, get) => ({
         throw new Error(result.error || 'Failed to create organization');
       }
 
+      // Sign in with the newly created account
+      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: data.adminEmail,
+        password: data.adminPassword,
+      });
+
+      if (signInError) {
+        throw new Error('Organization created but failed to sign in. Please try logging in manually.');
+      }
+
+      // Load the organization data
+      const { data: orgData, error: orgError } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', result.data.organizationId)
+        .single();
+
+      if (orgError) {
+        throw new Error('Failed to load organization data');
+      }
+
+      // Store the complete organization data
       set({ 
-        organization: result.data.organization,
+        organization: orgData,
         loading: false 
       });
 
       return {
         organizationId: result.data.organizationId,
-        adminId: result.data.adminId
+        adminId: result.data.adminId,
+        slug: orgData.slug,
+        session: authData.session
       };
     } catch (error) {
       console.error('Error creating organization:', error);

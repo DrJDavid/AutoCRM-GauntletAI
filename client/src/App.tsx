@@ -27,7 +27,6 @@ import CustomerRegister from '@/pages/auth/customer/Register';
 
 // Organization Pages
 import OrganizationNew from '@/pages/org/New';
-import OrganizationSetup from '@/pages/org/Setup';
 import CustomerInvite from '@/pages/org/CustomerInvite';
 import AgentInvite from '@/pages/org/AgentInvite';
 
@@ -98,16 +97,15 @@ const App: FC = () => {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/auth/reset-password" element={<ResetPassword />} />
+          <Route path="/org/new" element={<OrganizationNew />} />
+          <Route path="/org/:orgId/invite/customer/:token" element={<CustomerInvite />} />
+          <Route path="/org/:orgId/invite/agent/:token" element={<AgentInvite />} />
 
-          {/* Organization Routes */}
-          <Route path="/org">
-            <Route path="new" element={<OrganizationNew />} />
-            <Route path="setup" element={<OrganizationSetup />} />
-            <Route path="customers/invite" element={<CustomerInvite />} />
-            <Route path="agents/invite" element={<AgentInvite />} />
+          {/* Auth Routes */}
+          <Route path="/auth">
+            <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
+            <Route path="reset-password" element={<ResetPassword />} />
           </Route>
 
           {/* Team Auth Routes */}
