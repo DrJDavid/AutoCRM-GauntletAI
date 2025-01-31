@@ -31,6 +31,12 @@ export const TicketScratchpad: FC<TicketScratchpadProps> = ({
   className
 }) => {
   const { currentUser } = useUserStore();
+
+  // Only allow agents and admins to access the scratchpad
+  if (!currentUser || !['admin', 'agent', 'head_admin'].includes(currentUser.role)) {
+    return null;
+  }
+
   const [messages, setMessages] = useState<ScratchpadMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);

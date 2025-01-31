@@ -65,7 +65,7 @@ export const TicketChat: FC<TicketChatProps> = ({
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen to all changes
+          event: '*',
           schema: 'public',
           table: 'ticket_messages',
           filter: `ticket_id=eq.${ticketId}`,
@@ -89,6 +89,10 @@ export const TicketChat: FC<TicketChatProps> = ({
               .single();
 
             if (messageWithSender && messageWithSender.created_at) {
+              // Only show internal messages to agents and admins
+              if (messageWithSender.is_internal && mode === 'customer') {
+                return;
+              }
               setMessages(prev => [...prev, messageWithSender as Message]);
               scrollToBottom();
             }
@@ -122,8 +126,14 @@ export const TicketChat: FC<TicketChatProps> = ({
 
       if (error) throw error;
       
-      // Ensure all required fields are present and cast to Message type
+      // Filter out internal messages for customers
       const validMessages = (data || [])
+        .filter(msg => {
+          if (mode === 'customer') {
+            return !msg.is_internal;
+          }
+          return true;
+        })
         .filter(msg => msg && msg.id && msg.created_at && msg.message)
         .map(msg => ({
           ...msg,
@@ -158,28 +168,11 @@ export const TicketChat: FC<TicketChatProps> = ({
         is_internal: isInternalNote && (mode === 'admin' || mode === 'agent'),
       };
 
-      const { data: newMessageData, error } = await supabase
+      const { error } = await supabase
         .from('ticket_messages')
-        .insert(messageData)
-        .select(`
-          *,
-          sender:profiles!sender_id (
-            id,
-            email,
-            first_name,
-            last_name,
-            avatar_url,
-            role
-          )
-        `)
-        .single();
+        .insert(messageData);
 
       if (error) throw error;
-
-      if (newMessageData && newMessageData.created_at) {
-        setMessages(prev => [...prev, newMessageData as Message]);
-        scrollToBottom();
-      }
 
       setNewMessage('');
       setIsInternalNote(false);
