@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/supabase';
-import type { Ticket } from '@/types';
 import { useUserStore } from './userStore';
 
-type Ticket = Database['public']['Tables']['tickets']['Row'];
+type Ticket = Database['public']['Tables']['tickets']['Row'] & {
+  customer?: Database['public']['Tables']['profiles']['Row'] | null;
+};
 type TicketMessage = Database['public']['Tables']['ticket_messages']['Row'];
 type TicketStatus = Database['public']['Enums']['ticket_status'];
 type TicketPriority = Database['public']['Enums']['ticket_priority'];
@@ -74,14 +75,21 @@ export const useTicketStore = create<TicketState>((set, get) => ({
   fetchTickets: async () => {
     set({ isLoading: true });
     try {
+      const currentUser = useUserStore.getState().currentUser;
+      if (!currentUser?.organization_id) {
+        throw new Error('No organization ID found');
+      }
+
       const { data, error } = await supabase
         .from('tickets')
-        .select('*')
+        .select('*, customer:customer_id(*)')
+        .eq('organization_id', currentUser.organization_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       set({ tickets: data || [] });
     } catch (error) {
+      console.error('Error fetching tickets:', error);
       set({ error: error as Error });
     } finally {
       set({ isLoading: false });

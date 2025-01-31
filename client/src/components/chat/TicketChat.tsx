@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { Message } from '@/db/types/database';
+import type { TicketMessage } from '@/features/tickets/types';
 
 interface TicketChatProps {
   ticketId: string;
@@ -18,6 +18,7 @@ interface TicketChatProps {
 
 const messageSchema = z.object({
   content: z.string().min(1, 'Message cannot be empty').max(2000, 'Message is too long'),
+  isInternal: z.boolean().default(false),
 });
 
 type MessageFormValues = z.infer<typeof messageSchema>;
@@ -25,7 +26,7 @@ type MessageFormValues = z.infer<typeof messageSchema>;
 export function TicketChat({ ticketId }: TicketChatProps) {
   const { currentUser } = useUserStore();
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<TicketMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -35,6 +36,7 @@ export function TicketChat({ ticketId }: TicketChatProps) {
     resolver: zodResolver(messageSchema),
     defaultValues: {
       content: '',
+      isInternal: false,
     },
   });
 
@@ -74,34 +76,32 @@ export function TicketChat({ ticketId }: TicketChatProps) {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        // First fetch messages
         const { data: messageData, error: messageError } = await supabase
-          .from('messages')
-          .select('*')
+          .from('ticket_messages')
+          .select(`
+            *,
+            sender:sender_id (
+              id,
+              email,
+              role,
+              first_name,
+              last_name
+            )
+          `)
           .eq('ticket_id', ticketId)
           .order('created_at', { ascending: true });
 
         if (messageError) throw messageError;
 
-        // Then fetch user data for each message
-        const messagesWithUsers = await Promise.all(
-          (messageData || []).map(async (message) => {
-            const { data: userData, error: userError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', message.user_id)
-              .single();
+        // Strict filtering of internal messages for customers
+        const filteredMessages = messageData?.filter(msg => {
+          if (currentUser?.role === 'customer') {
+            return msg.is_internal !== true;
+          }
+          return true;
+        }) as TicketMessage[];
 
-            if (userError) {
-              console.error('Error fetching user:', userError);
-              return { ...message, user: null };
-            }
-
-            return { ...message, user: userData };
-          })
-        );
-
-        setMessages(messagesWithUsers);
+        setMessages(filteredMessages || []);
       } catch (error) {
         console.error('Error fetching messages:', error);
         toast({
@@ -115,32 +115,41 @@ export function TicketChat({ ticketId }: TicketChatProps) {
     };
 
     fetchMessages();
-  }, [ticketId, toast]);
 
-  // Subscribe to new messages
-  useEffect(() => {
+    // Set up realtime subscription
     const channel = supabase
-      .channel(`messages:${ticketId}`)
+      .channel(`ticket_messages:${ticketId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'messages',
+          table: 'ticket_messages',
           filter: `ticket_id=eq.${ticketId}`,
         },
         async (payload) => {
-          if (payload.eventType === 'INSERT' && payload.new.user_id !== currentUser?.id) {
-            // Only fetch user data for messages from other users
-            const { data: userData, error: userError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', payload.new.user_id)
+          if (payload.eventType === 'INSERT') {
+            const { data: newMessage, error } = await supabase
+              .from('ticket_messages')
+              .select(`
+                *,
+                sender:sender_id (
+                  id,
+                  email,
+                  role,
+                  first_name,
+                  last_name
+                )
+              `)
+              .eq('id', payload.new.id)
               .single();
 
-            if (!userError && userData) {
-              const newMessage = { ...payload.new, user: userData };
-              setMessages((prev) => [...prev, newMessage]);
+            if (!error && newMessage) {
+              // Strict filtering for realtime updates
+              if (currentUser?.role === 'customer' && newMessage.is_internal === true) {
+                return;
+              }
+              setMessages(prev => [...prev, newMessage as TicketMessage]);
               scrollToBottom();
             }
           }
@@ -151,7 +160,7 @@ export function TicketChat({ ticketId }: TicketChatProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [ticketId, currentUser?.id]);
+  }, [ticketId, currentUser?.role, toast]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -164,36 +173,18 @@ export function TicketChat({ ticketId }: TicketChatProps) {
     try {
       setSending(true);
 
-      // Create optimistic message
-      const optimisticMessage: Message = {
-        id: crypto.randomUUID(),
-        ticket_id: ticketId,
-        user_id: currentUser.id,
-        content: values.content,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        user: userProfile,
-      };
+      const { error } = await supabase
+        .from('ticket_messages')
+        .insert({
+          ticket_id: ticketId,
+          sender_id: currentUser.id,
+          message: values.content,
+          is_internal: values.isInternal,
+        });
 
-      // Add optimistic message to state
-      setMessages((prev) => [...prev, optimisticMessage]);
-      scrollToBottom();
+      if (error) throw error;
 
-      // Reset form early for better UX
       form.reset();
-
-      // Actually send the message
-      const { error } = await supabase.from('messages').insert({
-        ticket_id: ticketId,
-        user_id: currentUser.id,
-        content: values.content,
-      });
-
-      if (error) {
-        // Remove optimistic message on error
-        setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessage.id));
-        throw error;
-      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -201,8 +192,6 @@ export function TicketChat({ ticketId }: TicketChatProps) {
         description: 'Failed to send message',
         variant: 'destructive',
       });
-      // Re-populate the form with the failed message
-      form.setValue('content', values.content);
     } finally {
       setSending(false);
     }
@@ -233,25 +222,32 @@ export function TicketChat({ ticketId }: TicketChatProps) {
           <div
             key={message.id}
             className={`flex ${
-              message.user_id === currentUser?.id ? 'justify-end' : 'justify-start'
+              message.sender_id === currentUser?.id ? 'justify-end' : 'justify-start'
             }`}
           >
             <div
               className={`max-w-[80%] rounded-lg p-3 ${
-                message.user_id === currentUser?.id
+                message.sender_id === currentUser?.id
                   ? 'bg-primary text-primary-foreground'
+                  : message.is_internal
+                  ? 'bg-yellow-50 dark:bg-yellow-900/20'
                   : 'bg-muted'
               }`}
             >
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-sm font-medium">
-                  {message.user?.email || 'Unknown User'}
+                  {message.sender?.email || 'Unknown User'}
                 </span>
                 <span className="text-xs opacity-70">
-                  {new Date(message.created_at).toLocaleTimeString()}
+                  {new Date(message.created_at || '').toLocaleTimeString()}
                 </span>
+                {message.is_internal && (
+                  <span className="text-xs bg-yellow-200 dark:bg-yellow-800 px-1.5 py-0.5 rounded">
+                    Internal Note
+                  </span>
+                )}
               </div>
-              <p className="whitespace-pre-wrap">{message.content}</p>
+              <p className="whitespace-pre-wrap">{message.message}</p>
             </div>
           </div>
         ))}
@@ -261,12 +257,12 @@ export function TicketChat({ ticketId }: TicketChatProps) {
       {/* Message Input */}
       <div className="border-t p-4">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex gap-2">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
             <FormField
               control={form.control}
               name="content"
               render={({ field }) => (
-                <FormItem className="flex-1">
+                <FormItem>
                   <FormControl>
                     <Textarea
                       placeholder={
@@ -282,18 +278,37 @@ export function TicketChat({ ticketId }: TicketChatProps) {
                 </FormItem>
               )}
             />
-            <Button 
-              type="submit" 
-              className="self-end" 
-              disabled={sending || !userProfile}
-            >
-              {sending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              <span className="sr-only">Send message</span>
-            </Button>
+            
+            {currentUser?.role !== 'customer' && (
+              <FormField
+                control={form.control}
+                name="isInternal"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                    </FormControl>
+                    <span className="text-sm">Internal note</span>
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <div className="flex justify-end">
+              <Button type="submit" disabled={sending || !userProfile}>
+                {sending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+                <span className="sr-only">Send message</span>
+              </Button>
+            </div>
           </form>
         </Form>
       </div>

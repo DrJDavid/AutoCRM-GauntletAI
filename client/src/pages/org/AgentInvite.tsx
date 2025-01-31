@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useUserStore } from '@/stores/userStore';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/supabaseClient';
 import { Loader2, Send, Plus, X } from 'lucide-react';
 import {
   Card,
@@ -35,7 +35,7 @@ export default function AgentInvite() {
   };
 
   const handleInvite = async () => {
-    if (!currentUser?.organization?.id) {
+    if (!currentUser?.organization_id) {
       toast({
         title: 'Error',
         description: 'Organization not found',
@@ -58,39 +58,36 @@ export default function AgentInvite() {
     setIsLoading(true);
 
     try {
-      // Create agent invites
+      // Create agent invites using the invitations table
       for (const email of validEmails) {
-        console.log('Sending agent invite with:', {
-          org_id: currentUser.organization.id,
-          agent_email: email
+        console.log('Creating agent invite:', {
+          organization_id: currentUser.organization_id,
+          email: email
         });
 
-        const { data, error } = await supabase.rpc(
-          'create_agent_invite',
-          {
-            org_id: currentUser.organization.id,
-            agent_email: email
-          }
-        );
+        const { error } = await supabase
+          .from('invitations')
+          .insert({
+            organization_id: currentUser.organization_id,
+            email: email,
+            type: 'team',
+            role: 'agent',
+            invited_by: currentUser.id,
+            status: 'pending',
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+          });
 
         if (error) {
-          console.error('Agent invite error details:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code,
-            status: error.status,
-            raw: error,
-            full: JSON.stringify(error, null, 2),
-            requestData: {
-              org_id: currentUser.organization.id,
-              agent_email: email
-            }
+          console.error('Agent invite error:', error);
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
           });
           throw error;
         }
 
-        console.log('Agent invite created:', data);
+        console.log('Agent invite created for:', email);
       }
 
       toast({
@@ -101,7 +98,7 @@ export default function AgentInvite() {
       // Reset form
       setEmails(['']);
     } catch (error: any) {
-      console.error('Full error:', error);
+      console.error('Failed to create invites:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to send invitations',

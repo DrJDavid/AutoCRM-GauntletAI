@@ -19,10 +19,10 @@ export default function AdminDashboard() {
   const { tickets, fetchTickets } = useTicketStore();
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser?.organization_id) {
       fetchTickets();
     }
-  }, [currentUser, fetchTickets]);
+  }, [currentUser?.organization_id, fetchTickets]);
 
   if (currentUser === null) {
     return (
@@ -111,19 +111,19 @@ export default function AdminDashboard() {
       <div className="mt-6">
         <h3 className="text-lg font-medium mb-4">Quick Actions</h3>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Link to="/org/customers/invite">
+          <Link to="/admin/invite-customers">
             <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
               <UserPlus className="h-6 w-6" />
               <span>Invite Customers</span>
             </Button>
           </Link>
-          <Link to="/admin/tickets/all">
+          <Link to="/admin/tickets">
             <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
               <TicketCheck className="h-6 w-6" />
               <span>View All Tickets</span>
             </Button>
           </Link>
-          <Link to="/admin/tickets/analytics">
+          <Link to="/admin/analytics">
             <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
               <BarChart className="h-6 w-6" />
               <span>View Analytics</span>

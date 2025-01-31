@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/lib/supabaseClient';
-import type { DbProfile } from '@/types/database';
+import type { DbProfile, UserRole } from '@/types/database';
 
 interface AuthCredentials {
   email: string;
@@ -10,14 +10,14 @@ interface AuthCredentials {
   organizationSlug?: string;
 }
 
-interface UserState {
+export interface UserState {
   currentUser: DbProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: Error | null;
   checkAuth: () => Promise<DbProfile | null>;
   login: (credentials: AuthCredentials) => Promise<DbProfile>;
-  signUp: (email: string, password: string, role: string, organizationId?: string) => Promise<void>;
+  signUp: (email: string, password: string, role: UserRole, organizationId?: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -213,9 +213,25 @@ export const useUserStore = create<UserState>()(
         }
       },
 
-      signUp: async (email: string, password: string, role: string, organizationId?: string) => {
+      signUp: async (email: string, password: string, role: UserRole, organizationId?: string) => {
         set({ isLoading: true, error: null });
         try {
+          // First validate the invitation
+          const { data: validationResult, error: validationError } = await supabase
+            .rpc('validate_invite_by_email', {
+              email_param: email,
+              type_param: role === 'customer' ? 'customer' : 'agent'
+            });
+
+          if (validationError) throw validationError;
+          
+          const result = Array.isArray(validationResult) ? validationResult[0] : validationResult;
+          
+          if (!result || !result.is_valid) {
+            throw new Error('No valid invitation found for this email');
+          }
+
+          // Sign up the user
           const { data, error } = await supabase.auth.signUp({
             email,
             password,
@@ -224,19 +240,16 @@ export const useUserStore = create<UserState>()(
           if (error) throw error;
           if (!data.user) throw new Error('No user data after signup');
 
-          // Create profile
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([
-              {
-                id: data.user.id,
-                email,
-                role,
-                organization_id: organizationId,
-              },
-            ]);
+          // Accept the invitation using the email
+          const { error: acceptError } = await supabase
+            .rpc('accept_invitation_by_email', {
+              invitee_email: email
+            });
 
-          if (profileError) throw profileError;
+          if (acceptError) {
+            console.error('Failed to accept invitation:', acceptError);
+            throw acceptError;
+          }
 
           set({ isLoading: false });
         } catch (error) {

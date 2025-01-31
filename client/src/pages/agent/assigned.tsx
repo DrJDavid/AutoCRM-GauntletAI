@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 import { useUserStore } from '@/stores/userStore';
 import { supabase } from '@/lib/supabaseClient';
-import type { Ticket } from '@/types/database';
+import type { Database } from '@/types/supabase';
+
+type Ticket = Database['public']['Tables']['tickets']['Row'] & {
+  customer: Database['public']['Tables']['users']['Row']
+};
+
+type TicketPriority = keyof typeof priorityColors;
+type TicketStatus = keyof typeof statusColors;
+type TicketCategory = keyof typeof categoryColors;
 
 const priorityColors = {
   low: 'bg-blue-500/10 text-blue-500',
@@ -32,7 +40,7 @@ export default function AssignedTickets() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const { currentUser } = useUserStore();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchAssignedTickets() {
@@ -42,20 +50,19 @@ export default function AssignedTickets() {
         const { data, error } = await supabase
           .from('tickets')
           .select('*, customer:customer_id(*)')
-          .eq('assigned_agent_id', currentUser.id)
-          .eq('organization_id', currentUser.organization_id)
-          .not('status', 'eq', 'closed') // Exclude closed tickets
-          .order('priority', { ascending: false }) // Higher priority first
-          .order('created_at', { ascending: true }); // Older tickets first within same priority
+          .eq('assigned_to', currentUser.id)
+          .eq('organization_id', currentUser.organization_id || '')
+          .not('status', 'eq', 'closed')
+          .order('priority', { ascending: false })
+          .order('created_at', { ascending: true });
 
         if (error) throw error;
         
-        // Sort tickets by priority order and then by creation date
         const sortedTickets = (data || []).sort((a, b) => {
           const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
-          const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+          const priorityDiff = priorityOrder[a.priority as TicketPriority] - priorityOrder[b.priority as TicketPriority];
           if (priorityDiff !== 0) return priorityDiff;
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          return new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime();
         });
         
         setTickets(sortedTickets);
@@ -91,7 +98,7 @@ export default function AssignedTickets() {
   }, [currentUser?.id, currentUser?.organization_id]);
 
   const handleTicketClick = (ticketId: string) => {
-    setLocation(`/agent/tickets/${ticketId}`);
+    navigate(`/agent/tickets/${ticketId}`);
   };
 
   if (loading) {
@@ -120,22 +127,22 @@ export default function AssignedTickets() {
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-semibold">{ticket.title}</h3>
                 <div className="flex gap-2">
-                  <Badge variant="secondary" className={priorityColors[ticket.priority]}>
+                  <Badge variant="secondary" className={priorityColors[ticket.priority as TicketPriority]}>
                     {ticket.priority}
                   </Badge>
-                  <Badge variant="secondary" className={statusColors[ticket.status]}>
+                  <Badge variant="secondary" className={statusColors[ticket.status as TicketStatus]}>
                     {ticket.status.replace('_', ' ')}
                   </Badge>
-                  <Badge variant="secondary" className={categoryColors[ticket.category]}>
+                  <Badge variant="secondary" className={categoryColors[ticket.category as TicketCategory]}>
                     {ticket.category.replace('_', ' ')}
                   </Badge>
                 </div>
               </div>
               <div className="text-sm text-gray-500 mb-2">
-                Customer: {ticket.customer.email}
+                Customer: {ticket.customer?.email || 'Unknown'}
               </div>
               <div className="text-sm text-gray-500">
-                Created: {new Date(ticket.created_at).toLocaleString()}
+                Created: {ticket.created_at ? new Date(ticket.created_at).toLocaleString() : 'Unknown'}
               </div>
             </Card>
           ))

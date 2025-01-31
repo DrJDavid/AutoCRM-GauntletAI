@@ -16,17 +16,19 @@ export default function InviteCustomers() {
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser?.organization?.id) {
+    if (!currentUser?.organization_id) {
       toast({
         title: "Error",
-        description: "No organization found",
+        description: "No organization found. Please ensure you're part of an organization.",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const response = await createCustomerInvite(email, currentUser.organization.id);
+      console.log('Sending invite to:', email, 'for org:', currentUser.organization_id);
+      const response = await createCustomerInvite(email, currentUser.organization_id);
+      
       if (response.success) {
         toast({
           title: "Success",
@@ -83,7 +85,7 @@ export default function InviteCustomers() {
               <Button 
                 type="submit" 
                 className="w-full"
-                disabled={isLoading || !email}
+                disabled={isLoading || !email || !currentUser?.organization_id}
               >
                 {isLoading ? "Sending Invitation..." : "Send Invitation"}
               </Button>

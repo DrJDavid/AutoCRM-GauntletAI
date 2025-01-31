@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useTicketStore } from '@/stores/ticketStore';
 import { TicketList } from '@/features/tickets';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useLocation } from 'wouter';
+import { useLocation } from 'react-router-dom';
 import {
   BarChart,
   Bar,

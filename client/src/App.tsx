@@ -5,6 +5,7 @@ import { queryClient } from './lib/queryClient';
 import { useUserStore } from '@/stores/userStore';
 import { useTicketStore } from '@/stores/ticketStore';
 import { Toaster } from '@/components/ui';
+import type { UserState } from '@/stores/userStore';
 
 // Layouts
 import {
@@ -63,7 +64,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 const App: FC = () => {
   const location = useLocation();
-  const checkAuth = useUserStore((state) => state.checkAuth);
+  const checkAuth = useUserStore((state: UserState) => state.checkAuth);
   const { setupTicketSubscription, cleanup, fetchTickets } = useTicketStore();
   const { currentUser } = useUserStore();
 

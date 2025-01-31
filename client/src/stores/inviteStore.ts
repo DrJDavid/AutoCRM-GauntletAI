@@ -1,5 +1,11 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabaseClient';
+import type { Database } from '@/types/supabase';
+
+type InvitationType = Database['public']['Enums']['invitation_type'];
+type InvitationStatus = Database['public']['Enums']['invitation_status'];
+type UserRole = Database['public']['Enums']['user_role'];
+type InvitationInsert = Database['public']['Tables']['invitations']['Insert'];
 
 interface InviteStore {
   isLoading: boolean;
@@ -7,53 +13,40 @@ interface InviteStore {
   clearError: () => void;
   createAgentInvite: (email: string, organizationId: string) => Promise<{ success: boolean; token?: string }>;
   createCustomerInvite: (email: string, organizationId: string) => Promise<{ success: boolean; token?: string }>;
-  deleteInvite: (id: string, type: 'agent' | 'customer') => Promise<{ success: boolean }>;
-  checkInvite: (email: string, type: 'agent' | 'customer') => Promise<any>;
+  deleteInvite: (id: string) => Promise<{ success: boolean }>;
+  checkInvite: (token: string) => Promise<any>;
 }
 
-export const useInviteStore = create<InviteStore>((set, get) => ({
+export const useInviteStore = create<InviteStore>((set) => ({
   isLoading: false,
   error: null,
 
   clearError: () => set({ error: null }),
 
   createAgentInvite: async (email: string, organizationId: string) => {
-    console.log('Creating agent invite:', { email, organizationId });
     set({ isLoading: true, error: null });
-    
     try {
-      // First try the new create_invite function
-      console.log('Attempting to create invite with create_invite function...');
-      const { data: token, error: rpcError } = await supabase.rpc('create_invite', {
-        org_id: organizationId,
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No authenticated user');
+
+      const invitation: InvitationInsert = {
         email,
-        invite_type: 'agent'
-      });
+        organization_id: organizationId,
+        type: 'team',
+        role: 'agent',
+        invited_by: user.id,
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'pending'
+      };
 
-      if (rpcError) {
-        console.error('RPC error:', rpcError);
-        // Fall back to direct table insert if RPC fails
-        console.log('Falling back to direct table insert...');
-        const { data, error: insertError } = await supabase
-          .from('agent_organization_invites')
-          .insert([
-            {
-              email,
-              organization_id: organizationId,
-              expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-              token: crypto.randomUUID() // Generate UUID on client side
-            },
-          ])
-          .select()
-          .single();
+      const { data, error } = await supabase
+        .from('invitations')
+        .insert(invitation)
+        .select()
+        .single();
 
-        if (insertError) throw insertError;
-        console.log('Insert successful:', data);
-        return { success: true, token: data.token };
-      }
-
-      console.log('RPC successful:', token);
-      return { success: true, token };
+      if (error) throw error;
+      return { success: true, token: data.id };
     } catch (err: any) {
       console.error('Error in createAgentInvite:', err);
       set({ error: err.message });
@@ -64,42 +57,29 @@ export const useInviteStore = create<InviteStore>((set, get) => ({
   },
 
   createCustomerInvite: async (email: string, organizationId: string) => {
-    console.log('Creating customer invite:', { email, organizationId });
     set({ isLoading: true, error: null });
-    
     try {
-      // First try the new create_invite function
-      console.log('Attempting to create invite with create_invite function...');
-      const { data: token, error: rpcError } = await supabase.rpc('create_invite', {
-        org_id: organizationId,
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No authenticated user');
+
+      const invitation: InvitationInsert = {
         email,
-        invite_type: 'customer'
-      });
+        organization_id: organizationId,
+        type: 'customer',
+        role: 'customer',
+        invited_by: user.id,
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'pending'
+      };
 
-      if (rpcError) {
-        console.error('RPC error:', rpcError);
-        // Fall back to direct table insert if RPC fails
-        console.log('Falling back to direct table insert...');
-        const { data, error: insertError } = await supabase
-          .from('customer_organization_invites')
-          .insert([
-            {
-              email,
-              organization_id: organizationId,
-              expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-              token: crypto.randomUUID() // Generate UUID on client side
-            },
-          ])
-          .select()
-          .single();
+      const { data, error } = await supabase
+        .from('invitations')
+        .insert(invitation)
+        .select()
+        .single();
 
-        if (insertError) throw insertError;
-        console.log('Insert successful:', data);
-        return { success: true, token: data.token };
-      }
-
-      console.log('RPC successful:', token);
-      return { success: true, token };
+      if (error) throw error;
+      return { success: true, token: data.id };
     } catch (err: any) {
       console.error('Error in createCustomerInvite:', err);
       set({ error: err.message });
@@ -109,14 +89,14 @@ export const useInviteStore = create<InviteStore>((set, get) => ({
     }
   },
 
-  deleteInvite: async (id: string, type: 'agent' | 'customer') => {
+  deleteInvite: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      const table = type === 'agent' ? 'agent_organization_invites' : 'customer_organization_invites';
       const { error } = await supabase
-        .from(table)
-        .delete()
-        .eq('id', id);
+        .from('invitations')
+        .update({ status: 'expired' })
+        .eq('id', id)
+        .eq('status', 'pending');
 
       if (error) throw error;
       return { success: true };
@@ -128,15 +108,14 @@ export const useInviteStore = create<InviteStore>((set, get) => ({
     }
   },
 
-  checkInvite: async (email: string, type: 'agent' | 'customer') => {
+  checkInvite: async (token: string) => {
     set({ isLoading: true, error: null });
     try {
-      const table = type === 'agent' ? 'agent_organization_invites' : 'customer_organization_invites';
       const { data, error } = await supabase
-        .from(table)
+        .from('invitations')
         .select()
-        .eq('email', email)
-        .eq('accepted', false)
+        .eq('id', token)
+        .eq('status', 'pending')
         .gt('expires_at', new Date().toISOString())
         .single();
 

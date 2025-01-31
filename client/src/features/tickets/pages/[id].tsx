@@ -1,14 +1,13 @@
 import { useEffect } from 'react';
-import { useRoute } from 'wouter';
+import { useParams, Link } from 'react-router-dom';
 import { useTicketStore } from '@/stores/ticketStore';
 import { TicketDetail } from '../components/TicketDetail';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
-import { Link } from 'wouter';
 import type { Ticket, TicketMessage, TicketStatus } from '@/types';
 
 export default function TicketDetailPage() {
-  const [match, params] = useRoute('/tickets/:id');
+  const params = useParams();
   const { tickets, selectedTicket, fetchTickets, setSelectedTicket, updateTicket } = useTicketStore();
 
   useEffect(() => {
@@ -68,7 +67,7 @@ export default function TicketDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/tickets">
+        <Link to="/tickets">
           <Button variant="ghost" size="icon">
             <ChevronLeft className="h-4 w-4" />
           </Button>

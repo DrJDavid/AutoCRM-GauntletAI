@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -16,7 +16,7 @@ import { supabase } from "@/lib/supabaseClient";
 import type { Profile } from "@/types";
 
 export default function AdminUsers() {
-  const [location, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { currentUser } = useUserStore();
   const [users, setUsers] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,7 +76,7 @@ export default function AdminUsers() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setLocation("/admin/users/invite")}>
+          <Button onClick={() => navigate("/admin/users/invite")}>
             Invite User
           </Button>
         </div>
@@ -126,7 +126,7 @@ export default function AdminUsers() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setLocation(`/admin/users/${user.id}`)}
+                    onClick={() => navigate(`/admin/users/${user.id}`)}
                   >
                     Edit
                   </Button>

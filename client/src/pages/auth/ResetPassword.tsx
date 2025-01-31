@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -24,14 +24,13 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Link } from 'wouter';
 
 const resetSchema = z.object({
   email: z.string().email('Invalid email address'),
 });
 
 export default function ResetPassword() {
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
@@ -115,7 +114,7 @@ export default function ResetPassword() {
 
           <p className="px-8 text-center text-sm text-muted-foreground">
             Remember your password?{' '}
-            <Link href="/" className="underline underline-offset-4 hover:text-primary">
+            <Link to="/auth/login" className="underline underline-offset-4 hover:text-primary">
               Back to login
             </Link>
           </p>

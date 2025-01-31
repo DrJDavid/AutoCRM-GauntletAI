@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation } from 'react-router-dom';
 import { useUserStore } from '@/stores/userStore';
 import { useTicketStore } from '@/stores/ticketStore';
 import { TicketList } from '../components/TicketList';

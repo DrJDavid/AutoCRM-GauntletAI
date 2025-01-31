@@ -21,18 +21,13 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/types/supabase';
 
-// Types for our invite data
-interface Invite {
-  id: string;
-  email: string;
-  created_at: string;
-  expires_at: string;
-  accepted: boolean;
-}
+type Invite = Database['public']['Tables']['invitations']['Row'];
+type InvitationStatus = Database['public']['Enums']['invitation_status'];
 
 interface InviteListProps {
-  type: 'agent' | 'customer';
+  type: 'team' | 'customer';
 }
 
 export const InviteList = ({ type }: InviteListProps) => {
@@ -43,14 +38,14 @@ export const InviteList = ({ type }: InviteListProps) => {
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<'created_at' | 'expires_at'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'accepted'>('all');
+  const [statusFilter, setStatusFilter] = useState<InvitationStatus | 'all'>('all');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const pageSize = 10;
 
   // Load invites from Supabase
   const loadInvites = async () => {
-    if (!currentUser?.organization?.id) {
+    if (!currentUser?.organization_id) {
       toast({
         title: 'Error',
         description: 'No organization found',
@@ -63,17 +58,16 @@ export const InviteList = ({ type }: InviteListProps) => {
     setError(null);
     
     try {
-      const table = type === 'agent' ? 'agent_organization_invites' : 'customer_organization_invites';
-      
       let query = supabase
-        .from(table)
+        .from('invitations')
         .select('*', { count: 'exact' })
-        .eq('organization_id', currentUser.organization.id)
+        .eq('organization_id', currentUser.organization_id)
+        .eq('type', type)
         .order(sortField, { ascending: sortOrder === 'asc' })
         .range((page - 1) * pageSize, page * pageSize - 1);
 
       if (statusFilter !== 'all') {
-        query = query.eq('accepted', statusFilter === 'accepted');
+        query = query.eq('status', statusFilter);
       }
 
       const { data, count, error } = await query;
@@ -97,7 +91,7 @@ export const InviteList = ({ type }: InviteListProps) => {
 
   // Delete an invite
   const deleteInvite = async (id: string) => {
-    if (!currentUser?.organization?.id) {
+    if (!currentUser?.organization_id) {
       toast({
         title: 'Error',
         description: 'No organization found',
@@ -107,28 +101,27 @@ export const InviteList = ({ type }: InviteListProps) => {
     }
     
     try {
-      const table = type === 'agent' ? 'agent_organization_invites' : 'customer_organization_invites';
-      
       const { error } = await supabase
-        .from(table)
-        .delete()
+        .from('invitations')
+        .update({ status: 'expired' })
         .eq('id', id)
-        .eq('organization_id', currentUser.organization.id); // RLS will enforce this anyway
+        .eq('organization_id', currentUser.organization_id)
+        .eq('status', 'pending');
 
       if (error) throw error;
 
       toast({
         title: 'Success',
-        description: 'Invite deleted successfully',
+        description: 'Invite cancelled successfully',
       });
 
       // Refresh the list
       loadInvites();
     } catch (err) {
-      console.error('Failed to delete invite:', err);
+      console.error('Failed to cancel invite:', err);
       toast({
         title: 'Error',
-        description: 'Failed to delete invite. Please try again.',
+        description: 'Failed to cancel invite. Please try again.',
         variant: 'destructive',
       });
     }
@@ -137,7 +130,7 @@ export const InviteList = ({ type }: InviteListProps) => {
   // Load invites when component mounts or dependencies change
   useEffect(() => {
     loadInvites();
-  }, [currentUser?.organization?.id, type, sortField, sortOrder, statusFilter, page]);
+  }, [currentUser?.organization_id, type, sortField, sortOrder, statusFilter, page]);
 
   return (
     <div className="space-y-4">
@@ -150,6 +143,7 @@ export const InviteList = ({ type }: InviteListProps) => {
             <SelectItem value="all">All</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="accepted">Accepted</SelectItem>
+            <SelectItem value="expired">Expired</SelectItem>
           </SelectContent>
         </Select>
 
@@ -187,20 +181,24 @@ export const InviteList = ({ type }: InviteListProps) => {
               <TableRow key={invite.id}>
                 <TableCell>{invite.email}</TableCell>
                 <TableCell>
-                  <Badge variant={invite.accepted ? "success" : "secondary"}>
-                    {invite.accepted ? 'Accepted' : 'Pending'}
+                  <Badge variant={
+                    invite.status === 'accepted' ? "default" :
+                    invite.status === 'expired' ? "destructive" :
+                    "secondary"
+                  }>
+                    {invite.status}
                   </Badge>
                 </TableCell>
-                <TableCell>{format(new Date(invite.created_at), 'PP')}</TableCell>
-                <TableCell>{format(new Date(invite.expires_at), 'PP')}</TableCell>
+                <TableCell>{format(new Date(invite.created_at || ''), 'PP')}</TableCell>
+                <TableCell>{format(new Date(invite.expires_at || ''), 'PP')}</TableCell>
                 <TableCell className="text-right">
-                  {!invite.accepted && (
+                  {invite.status === 'pending' && (
                     <Button
                       variant="destructive"
                       size="sm"
                       onClick={() => deleteInvite(invite.id)}
                     >
-                      Delete
+                      Cancel
                     </Button>
                   )}
                 </TableCell>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -24,7 +24,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Link } from 'wouter';
 import { useUserStore } from '@/stores/userStore';
 
 const registerSchema = z.object({
@@ -61,7 +60,7 @@ interface InviteWithOrg {
 }
 
 export default function Register() {
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const { signUp } = useUserStore();
@@ -127,13 +126,21 @@ export default function Register() {
       
       await signUp(values.email, values.password, 'customer', result.organization_id);
 
-      toast({
-        title: 'Success',
-        description: 'Registration successful! Please check your email to verify your account.',
+      // Sign in immediately after registration
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
       });
 
-      // Redirect to login
-      navigate('/auth/customer/login');
+      if (signInError) throw signInError;
+
+      toast({
+        title: 'Success',
+        description: 'Registration successful! Redirecting to portal...',
+      });
+
+      // Redirect to portal
+      navigate('/portal');
     } catch (error) {
       console.error('Registration error:', error);
       toast({
@@ -232,7 +239,7 @@ export default function Register() {
           <div className="space-y-2">
             <p className="px-8 text-center text-sm text-muted-foreground">
               Already have an account?{' '}
-              <Link href="/auth/customer/login" className="underline underline-offset-4 hover:text-primary">
+              <Link to="/auth/customer/login" className="underline underline-offset-4 hover:text-primary">
                 Sign in
               </Link>
             </p>

@@ -1,17 +1,51 @@
-import { create } from 'zustand';
+import { create, StateCreator } from 'zustand';
 import { supabase } from '@/lib/supabase';
-import type { UserRole } from '@/db/types/database';
+import type { DbOrganization, DbProfile, Json } from '@/types/database';
+
+interface OrganizationState {
+  organization: DbOrganization | null;
+  members: DbProfile[];
+  isLoading: boolean;
+  error: Error | null;
+  settings: OrganizationSettings;
+  businessHours: BusinessHours[];
+  holidays: Holiday[];
+}
 
 interface BusinessHours {
+  dayOfWeek: number;
+  open: string;
+  close: string;
   timezone: string;
-  regular_hours: {
-    [key: string]: Array<{ open: string; close: string }>;
+}
+
+interface Holiday {
+  date: string;
+  name: string;
+  isRecurring: boolean;
+}
+
+interface OrganizationSettings {
+  supportEmail: string;
+  billingEmail?: string;
+  timezone: string;
+  businessHours: {
+    regularHours: Record<string, Array<{ open: string; close: string }>>;
+    holidays: Holiday[];
   };
-  holidays: Array<{
-    date: string;
-    name: string;
-    closed: boolean;
-  }>;
+  ticketSettings: {
+    autoAssignment: boolean;
+    defaultPriority: string;
+    allowCustomerPriority: boolean;
+  };
+  chatSettings?: {
+    enabled: boolean;
+    operatingHours: {
+      inheritBusinessHours: boolean;
+      customHours?: Record<string, Array<{ open: string; close: string }>>;
+    };
+  };
+  metadata?: Json;
 }
 
 interface PhoneNumber {
@@ -52,12 +86,15 @@ interface CreateOrganizationData {
   adminPassword: string;
 }
 
-interface OrganizationStore {
-  organization: Organization | null;
+type OrganizationStoreState = {
+  organization: DbOrganization | null;
   loading: boolean;
   error: string | null;
+};
+
+type OrganizationStoreActions = {
   loadOrganization: (id: string) => Promise<void>;
-  updateOrganization: (updates: Partial<Organization>) => Promise<void>;
+  updateOrganization: (updates: Partial<DbOrganization>) => Promise<void>;
   createOrganization: (data: CreateOrganizationData) => Promise<{ 
     organizationId: string; 
     adminId: string;
@@ -66,6 +103,19 @@ interface OrganizationStore {
   }>;
   isBusinessHours: () => boolean;
   isChatAvailable: () => boolean;
+};
+
+type OrganizationStore = OrganizationStoreState & OrganizationStoreActions;
+
+function isOrganizationSettings(settings: unknown): settings is OrganizationSettings {
+  if (!settings || typeof settings !== 'object') return false;
+  const s = settings as any;
+  return (
+    typeof s.supportEmail === 'string' &&
+    typeof s.timezone === 'string' &&
+    typeof s.businessHours === 'object' &&
+    typeof s.ticketSettings === 'object'
+  );
 }
 
 export const useOrganizationStore = create<OrganizationStore>((set, get) => ({
@@ -94,7 +144,7 @@ export const useOrganizationStore = create<OrganizationStore>((set, get) => ({
     }
   },
 
-  updateOrganization: async (updates: Partial<Organization>) => {
+  updateOrganization: async (updates: Partial<DbOrganization>) => {
     const { organization } = get();
     if (!organization) return;
 
@@ -186,10 +236,11 @@ export const useOrganizationStore = create<OrganizationStore>((set, get) => ({
 
   isBusinessHours: () => {
     const { organization } = get();
-    if (!organization) return false;
+    if (!organization?.settings || !isOrganizationSettings(organization.settings)) return false;
 
+    const settings = organization.settings;
     const now = new Date();
-    const day = now.toLocaleLowerCase().slice(0, 3);
+    const day = now.getDay();
     const time = now.toLocaleTimeString('en-US', {
       hour12: false,
       hour: '2-digit',
@@ -198,33 +249,32 @@ export const useOrganizationStore = create<OrganizationStore>((set, get) => ({
 
     // Check if it's a holiday
     const today = now.toISOString().split('T')[0];
-    const isHoliday = organization.business_hours.holidays.some(
-      (holiday) => holiday.date === today && holiday.closed
+    const isHoliday = settings.businessHours.holidays.some(
+      (holiday: Holiday) => holiday.date === today
     );
     if (isHoliday) return false;
 
     // Check regular hours
-    const dayHours = organization.business_hours.regular_hours[day];
+    const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    const dayHours = settings.businessHours.regularHours[dayNames[day]];
     if (!dayHours?.length) return false;
 
-    return dayHours.some(({ open, close }) => {
+    return dayHours.some(({ open, close }: { open: string; close: string }) => {
       return time >= open && time <= close;
     });
   },
 
   isChatAvailable: () => {
     const { organization } = get();
-    if (!organization) return false;
+    if (!organization?.settings || !isOrganizationSettings(organization.settings)) return false;
 
-    const {
-      chat_settings: { enabled, operating_hours },
-    } = organization;
-
-    if (!enabled) return false;
+    const settings = organization.settings;
+    if (!settings.chatSettings?.enabled) return false;
 
     // If using custom hours, check those
-    if (!operating_hours.inherit_business_hours && operating_hours.custom_hours) {
-      // Similar logic to isBusinessHours but using custom_hours
+    if (!settings.chatSettings.operatingHours.inheritBusinessHours && 
+        settings.chatSettings.operatingHours.customHours) {
+      // Similar logic to isBusinessHours but using custom hours
       return true; // Implement custom hours check
     }
 

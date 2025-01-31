@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { config } from 'dotenv';
 import fs from 'fs';
 import path from 'path';
-import { Database } from '../src/types/supabase';
+import type { Database } from '@/types/supabase';
 
 config();
 

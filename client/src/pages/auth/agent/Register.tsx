@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,7 +16,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Link } from 'wouter';
 import { useUserStore } from '@/stores/userStore';
 
 const registerSchema = z.object({
@@ -53,7 +52,7 @@ interface InviteWithOrg {
 }
 
 export default function Register() {
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const { signUp } = useUserStore();
@@ -224,7 +223,7 @@ export default function Register() {
           <div className="space-y-2">
             <p className="px-8 text-center text-sm text-muted-foreground">
               Already have an account?{' '}
-              <Link href="/auth/agent/login" className="underline underline-offset-4 hover:text-primary">
+              <Link to="/auth/agent/login" className="underline underline-offset-4 hover:text-primary">
                 Sign in
               </Link>
             </p>

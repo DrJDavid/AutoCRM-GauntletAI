@@ -1,5 +1,5 @@
 import { FC, useEffect, useState } from 'react';
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/supabase';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ const TicketQueuePage: FC = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { currentUser } = useUserStore();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUnassignedTickets = async () => {
@@ -71,7 +71,7 @@ const TicketQueuePage: FC = () => {
       setTickets(tickets.filter(t => t.id !== ticketId));
 
       // Navigate to the assigned ticket
-      setLocation(`/agent/tickets/${ticketId}`);
+      navigate(`/agent/tickets/${ticketId}`);
     } catch (error) {
       console.error('Error assigning ticket:', error);
     }

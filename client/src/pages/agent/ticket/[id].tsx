@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'wouter';
+import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useUserStore } from '@/stores/userStore';
 import { TicketChat } from '@/components/chat/TicketChat';

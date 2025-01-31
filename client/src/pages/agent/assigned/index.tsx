@@ -1,5 +1,5 @@
 import { FC, useEffect, useState } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/supabase';
 import { Button } from '@/components/ui/button';

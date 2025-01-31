@@ -4,25 +4,32 @@
  */
 
 import type {
-  Profile,
-  Ticket,
-  TicketMessage,
-  Attachment,
+  DbProfile as Profile,
+  DbTicket as Ticket,
+  DbTicketMessage as TicketMessage,
+  DbTicketAttachment as Attachment,
   TicketPriority,
-  TicketCategory,
   TicketStatus,
   UserRole,
-  Organization,
+  DbOrganization as Organization,
 } from './database';
 
-// Re-export database types
+// Re-export all types from database.ts
+export * from './database';
+
+// Re-export all types from forms.ts
+export * from './forms';
+
+// Re-export Database type from supabase.ts
+export type { Database } from './supabase';
+
+// Re-export renamed types
 export type {
   Profile,
   Ticket,
   TicketMessage,
   Attachment,
   TicketPriority,
-  TicketCategory,
   TicketStatus,
   UserRole,
   Organization,
@@ -52,14 +59,12 @@ export interface TicketMessageWithRelations extends TicketMessage {
 export interface CreateTicketForm {
   title: string;
   description: string;
-  category: TicketCategory;
   priority: TicketPriority;
 }
 
 export interface UpdateTicketForm {
   title?: string;
   description?: string;
-  category?: TicketCategory;
   priority?: TicketPriority;
   status?: TicketStatus;
   assigned_agent_id?: string | null;
@@ -83,7 +88,6 @@ export interface TicketFormProps {
 
 // Filter Types
 export interface TicketFilters {
-  category?: TicketCategory[];
   priority?: TicketPriority[];
   status?: TicketStatus[];
   assignedTo?: string[];
