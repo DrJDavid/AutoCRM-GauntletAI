@@ -67,6 +67,13 @@ export function PortalLayout({ children }: PortalLayoutProps) {
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={() => navigate('/portal/ai-chat')}
+              >
+                AI Assistant
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => navigate('/portal/support')}
               >
                 Contact Support

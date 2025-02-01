@@ -7,11 +7,16 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
+    "@types/node": "^22.13.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "dotenv": "^16.4.7",
     "jsdom": "^26.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3",
     "vite-tsconfig-paths": "^5.1.4"
   },
   "dependencies": {
+    "openai": "^4.82.0",
     "react-router-dom": "^6.28.2",
     "zustand": "^5.0.3"
   }

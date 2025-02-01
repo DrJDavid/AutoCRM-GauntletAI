@@ -40,6 +40,7 @@ import UsersPage from '@/pages/admin/users';
 import AnalyticsPage from '@/pages/admin/analytics';
 import SettingsPage from '@/pages/admin/settings';
 import InviteCustomersPage from '@/pages/admin/invite-customers';
+import AdminAIChat from '@/pages/admin/ai-chat';
 
 // Agent Pages
 import AgentDashboardPage from '@/pages/agent/dashboard';
@@ -47,6 +48,7 @@ import AgentTicketListPage from '@/pages/agent/ticket-list';
 import AgentTicketDetailsPage from '@/pages/agent/tickets/[id]';
 import TicketQueuePage from '@/pages/agent/queue';
 import AssignedTicketsPage from '@/pages/agent/assigned';
+import AgentAIChat from '@/pages/agent/ai-chat';
 
 // Customer Portal Pages
 import CustomerPortal from '@/pages/portal';
@@ -54,6 +56,7 @@ import CustomerTickets from '@/pages/portal/tickets';
 import TicketDetails from '@/pages/portal/tickets/[id]';
 import KnowledgeBase from '@/pages/portal/kb';
 import Support from '@/pages/portal/support';
+import CustomerAIChat from '@/pages/portal/ai-chat';
 
 // Shared Pages
 import Landing from '@/pages/Landing';
@@ -140,6 +143,7 @@ const App: FC = () => {
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="invite-customers" element={<InviteCustomersPage />} />
+            <Route path="ai-chat" element={<AdminAIChat />} />
             <Route path="*" element={<NotFound />} />
           </Route>
 
@@ -159,6 +163,7 @@ const App: FC = () => {
             <Route path="tickets/:id" element={<AgentTicketDetailsPage />} />
             <Route path="queue" element={<TicketQueuePage />} />
             <Route path="assigned" element={<AssignedTicketsPage />} />
+            <Route path="ai-chat" element={<AgentAIChat />} />
             <Route path="*" element={<NotFound />} />
           </Route>
 
@@ -178,6 +183,7 @@ const App: FC = () => {
             <Route path="tickets/:id" element={<TicketDetails />} />
             <Route path="kb" element={<KnowledgeBase />} />
             <Route path="support" element={<Support />} />
+            <Route path="ai-chat" element={<CustomerAIChat />} />
             <Route path="*" element={<NotFound />} />
           </Route>
 

@@ -8,7 +8,8 @@ import {
   Settings,
   LogOut,
   UserPlus,
-  Mail
+  Mail,
+  Bot
 } from 'lucide-react';
 import { useUserStore } from '@/stores/userStore';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ const sidebarItems: SidebarItem[] = [
   { icon: BarChart3, label: 'Analytics', href: '/admin/analytics' },
   { icon: Users, label: 'Users', href: '/admin/users' },
   { icon: UserPlus, label: 'Manage Agents', href: '/admin/agents' },
+  { icon: Bot, label: 'AI Assistant', href: '/admin/ai-chat' },
   { icon: Settings, label: 'Settings', href: '/admin/settings' },
   { icon: Mail, label: 'Invite Customers', href: '/admin/invite-customers' },
 ];

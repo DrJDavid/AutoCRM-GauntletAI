@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, AlertCircle } from 'lucide-react';
+import { Send, Loader2, AlertCircle, Bot, Sparkles } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,7 +10,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { TicketMessage } from '@/features/tickets/types';
+import { generateResponse, type Message } from '@/lib/openai';
+import type { TicketMessage, MessageType, MessageMetadata } from '@/features/tickets/types';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import type { Database } from '@/types/supabase';
+
+type Ticket = Database['public']['Tables']['tickets']['Row'];
 
 interface TicketChatProps {
   ticketId: string;
@@ -31,6 +36,9 @@ export function TicketChat({ ticketId }: TicketChatProps) {
   const [sending, setSending] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [aiAgent, setAiAgent] = useState<any>(null);
+  const [isAiTyping, setIsAiTyping] = useState(false);
+  const [ticket, setTicket] = useState<Ticket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const form = useForm<MessageFormValues>({
     resolver: zodResolver(messageSchema),
@@ -39,6 +47,26 @@ export function TicketChat({ ticketId }: TicketChatProps) {
       isInternal: false,
     },
   });
+
+  // Load ticket data
+  useEffect(() => {
+    const loadTicket = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('tickets')
+          .select('*')
+          .eq('id', ticketId)
+          .single();
+
+        if (error) throw error;
+        setTicket(data);
+      } catch (error) {
+        console.error('Error loading ticket:', error);
+      }
+    };
+
+    loadTicket();
+  }, [ticketId]);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -71,6 +99,26 @@ export function TicketChat({ ticketId }: TicketChatProps) {
 
     loadUserProfile();
   }, [currentUser]);
+
+  // Load AI agent
+  useEffect(() => {
+    const loadAiAgent = async () => {
+      try {
+        const { data: agent, error } = await supabase
+          .from('ai_agents')
+          .select()
+          .eq('name', 'CLI Test Agent')
+          .single();
+
+        if (error) throw error;
+        setAiAgent(agent);
+      } catch (error) {
+        console.error('Error loading AI agent:', error);
+      }
+    };
+
+    loadAiAgent();
+  }, []);
 
   // Fetch messages
   useEffect(() => {
@@ -197,6 +245,73 @@ export function TicketChat({ ticketId }: TicketChatProps) {
     }
   };
 
+  const handleAiResponse = async () => {
+    if (!aiAgent || !currentUser || messages.length === 0 || !ticket) return;
+
+    try {
+      setIsAiTyping(true);
+
+      // Format messages for AI
+      const aiMessages: ChatCompletionMessageParam[] = messages.map(msg => ({
+        role: msg.message_type === 'ai_response' ? 'assistant' : 'user',
+        content: msg.message
+      }));
+
+      // Add ticket context to system prompt
+      const systemPrompt = `You are a helpful customer support AI assistant. You are helping with a support ticket.
+Current ticket context:
+- Status: ${ticket.status}
+- Priority: ${ticket.priority}
+${ticket.metadata && typeof ticket.metadata === 'object' && 'category' in ticket.metadata ? `- Category: ${ticket.metadata.category}` : ''}
+- Created: ${ticket.created_at ? new Date(ticket.created_at).toLocaleString() : 'Unknown'}
+
+Please provide helpful, accurate responses based on this context.`;
+
+      // Get AI response
+      const response = await generateResponse(
+        { config: aiAgent.configuration },
+        aiMessages,
+        systemPrompt
+      );
+
+      if (response?.content) {
+        // Save AI response as ticket message
+        const metadata: MessageMetadata = {
+          ai_generated: true,
+          type: 'ai_response',
+          model: aiAgent.configuration?.model,
+          confidence: 1.0,
+          context: {
+            ticket_id: ticketId,
+            prompt: systemPrompt
+          }
+        };
+
+        const { error } = await supabase
+          .from('ticket_messages')
+          .insert({
+            ticket_id: ticketId,
+            sender_id: aiAgent.id,
+            message: response.content,
+            is_internal: false,
+            message_type: 'ai_response',
+            metadata
+          });
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to get AI response',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsAiTyping(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -231,12 +346,21 @@ export function TicketChat({ ticketId }: TicketChatProps) {
                   ? 'bg-primary text-primary-foreground'
                   : message.is_internal
                   ? 'bg-yellow-50 dark:bg-yellow-900/20'
+                  : message.message_type === 'ai_response'
+                  ? 'bg-blue-50 dark:bg-blue-900/20'
                   : 'bg-muted'
               }`}
             >
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-sm font-medium">
-                  {message.sender?.email || 'Unknown User'}
+                  {message.message_type === 'ai_response' ? (
+                    <div className="flex items-center gap-1">
+                      <Bot className="h-4 w-4" />
+                      <span>AI Assistant</span>
+                    </div>
+                  ) : (
+                    message.sender?.email || 'Unknown User'
+                  )}
                 </span>
                 <span className="text-xs opacity-70">
                   {new Date(message.created_at || '').toLocaleTimeString()}
@@ -251,6 +375,12 @@ export function TicketChat({ ticketId }: TicketChatProps) {
             </div>
           </div>
         ))}
+        {isAiTyping && (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Bot className="h-4 w-4 animate-pulse" />
+            <span>AI is typing...</span>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -280,23 +410,41 @@ export function TicketChat({ ticketId }: TicketChatProps) {
             />
             
             {currentUser?.role !== 'customer' && (
-              <FormField
-                control={form.control}
-                name="isInternal"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-2">
-                    <FormControl>
-                      <input
-                        type="checkbox"
-                        checked={field.value}
-                        onChange={field.onChange}
-                        className="h-4 w-4 rounded border-gray-300"
-                      />
-                    </FormControl>
-                    <span className="text-sm">Internal note</span>
-                  </FormItem>
-                )}
-              />
+              <div className="flex items-center justify-between">
+                <FormField
+                  control={form.control}
+                  name="isInternal"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-2">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                      </FormControl>
+                      <span className="text-sm">Internal note</span>
+                    </FormItem>
+                  )}
+                />
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAiResponse}
+                  disabled={isAiTyping || !aiAgent}
+                  className="gap-2"
+                >
+                  {isAiTyping ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  Get AI Response
+                </Button>
+              </div>
             )}
 
             <div className="flex justify-end">

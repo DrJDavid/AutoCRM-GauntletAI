@@ -24,7 +24,9 @@
     "db:reset": "npm run db:backup:full && supabase db reset && npm run db:restore:full",
     "create-org-for-user": "tsx scripts/create-org-for-user.ts",
     "users:list": "tsx scripts/manage-local-users.ts list",
-    "users:delete": "tsx scripts/manage-local-users.ts delete"
+    "users:delete": "tsx scripts/manage-local-users.ts delete",
+    "ensure-org": "tsx scripts/ensure-org.mts",
+    "chat": "npm run ensure-org && tsx scripts/chat-cli.mts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

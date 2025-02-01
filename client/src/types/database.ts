@@ -18,6 +18,8 @@ export type TicketStatus = Database['public']['Enums']['ticket_status'];
 export type TicketPriority = Database['public']['Enums']['ticket_priority'];
 export type InvitationType = Database['public']['Enums']['invitation_type'];
 export type InvitationStatus = Database['public']['Enums']['invitation_status'];
+export type AiMessageType = Database['public']['Enums']['ai_message_type'];
+export type MessageType = Database['public']['Enums']['message_type'];
 
 /**
  * Base Table Types
@@ -29,6 +31,8 @@ export type DbTicket = Database['public']['Tables']['tickets']['Row'];
 export type DbTicketMessage = Database['public']['Tables']['ticket_messages']['Row'];
 export type DbTicketAttachment = Database['public']['Tables']['ticket_attachments']['Row'];
 export type DbAiAgent = Database['public']['Tables']['ai_agents']['Row'];
+export type DbAiConversation = Database['public']['Tables']['ai_conversations']['Row'];
+export type DbAiMessage = Database['public']['Tables']['ai_messages']['Row'];
 export type DbAiAgentAssignment = Database['public']['Tables']['ai_agent_assignments']['Row'];
 export type DbAiAgentResponse = Database['public']['Tables']['ai_agent_responses']['Row'];
 export type DbInvitation = Database['public']['Tables']['invitations']['Row'];
@@ -43,6 +47,8 @@ export type DbTicketInsert = Database['public']['Tables']['tickets']['Insert'];
 export type DbTicketMessageInsert = Database['public']['Tables']['ticket_messages']['Insert'];
 export type DbTicketAttachmentInsert = Database['public']['Tables']['ticket_attachments']['Insert'];
 export type DbAiAgentInsert = Database['public']['Tables']['ai_agents']['Insert'];
+export type DbAiConversationInsert = Database['public']['Tables']['ai_conversations']['Insert'];
+export type DbAiMessageInsert = Database['public']['Tables']['ai_messages']['Insert'];
 export type DbAiAgentAssignmentInsert = Database['public']['Tables']['ai_agent_assignments']['Insert'];
 export type DbAiAgentResponseInsert = Database['public']['Tables']['ai_agent_responses']['Insert'];
 export type DbInvitationInsert = Database['public']['Tables']['invitations']['Insert'];
@@ -57,6 +63,8 @@ export type DbTicketUpdate = Database['public']['Tables']['tickets']['Update'];
 export type DbTicketMessageUpdate = Database['public']['Tables']['ticket_messages']['Update'];
 export type DbTicketAttachmentUpdate = Database['public']['Tables']['ticket_attachments']['Update'];
 export type DbAiAgentUpdate = Database['public']['Tables']['ai_agents']['Update'];
+export type DbAiConversationUpdate = Database['public']['Tables']['ai_conversations']['Update'];
+export type DbAiMessageUpdate = Database['public']['Tables']['ai_messages']['Update'];
 export type DbAiAgentAssignmentUpdate = Database['public']['Tables']['ai_agent_assignments']['Update'];
 export type DbAiAgentResponseUpdate = Database['public']['Tables']['ai_agent_responses']['Update'];
 export type DbInvitationUpdate = Database['public']['Tables']['invitations']['Update'];

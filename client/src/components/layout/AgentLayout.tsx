@@ -1,6 +1,6 @@
 import { FC } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, TicketCheck, ListChecks, CheckSquare, LogOut } from 'lucide-react';
+import { LayoutDashboard, TicketCheck, ListChecks, CheckSquare, LogOut, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useUserStore } from '@/stores/userStore';
@@ -21,6 +21,7 @@ const sidebarItems: SidebarItem[] = [
   { icon: TicketCheck, label: 'Tickets', href: '/agent/tickets' },
   { icon: ListChecks, label: 'Queue', href: '/agent/queue' },
   { icon: CheckSquare, label: 'Assigned', href: '/agent/assigned' },
+  { icon: Bot, label: 'AI Assistant', href: '/agent/ai-chat' },
 ];
 
 export const AgentLayout: FC<Props> = ({ children, className }) => {

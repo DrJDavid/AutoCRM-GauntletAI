@@ -13,7 +13,8 @@ import {
   UserCog,
   BarChart,
   UserPlus,
-  List
+  List,
+  Bot
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -53,6 +54,12 @@ const navigation: NavigationItem[] = [
     icon: FileText,
     roles: ['customer']
   },
+  { 
+    name: 'AI Assistant', 
+    to: '/portal/ai-chat', 
+    icon: Bot,
+    roles: ['customer']
+  },
 
   // Admin Navigation
   { 
@@ -83,6 +90,12 @@ const navigation: NavigationItem[] = [
     name: 'Analytics', 
     to: '/admin/analytics', 
     icon: BarChart,
+    roles: ['admin']
+  },
+  { 
+    name: 'AI Assistant', 
+    to: '/admin/ai-chat', 
+    icon: Bot,
     roles: ['admin']
   },
   { 
@@ -121,6 +134,12 @@ const navigation: NavigationItem[] = [
     name: 'All Tickets', 
     to: '/agent/tickets', 
     icon: Inbox,
+    roles: ['agent']
+  },
+  { 
+    name: 'AI Assistant', 
+    to: '/agent/ai-chat', 
+    icon: Bot,
     roles: ['agent']
   }
 ];
